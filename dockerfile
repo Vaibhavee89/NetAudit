@@ -5,11 +5,9 @@ FROM python:3.10-slim-bookworm
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Install system dependencies
+# Install only required system dependencies and clean up
 RUN apt-get update && \
-    apt-get upgrade -y && \
     apt-get install -y --no-install-recommends nmap && \
-    apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Set work directory
@@ -24,4 +22,4 @@ RUN pip install -r requirements.txt
 COPY . .
 
 # Run Streamlit
-CMD ["streamlit", "run", "app.py", "--server.port=${PORT}", "--server.enableCORS=false"]
+CMD streamlit run app.py --server.port=${PORT} --server.enableCORS=false
