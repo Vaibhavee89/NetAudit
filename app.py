@@ -70,6 +70,20 @@ def save_report(data, name='scan_report.json'):
     with open(f'report_{timestamp}.json', 'w') as f:
         json.dump(data, f, indent=2)
 
+def firewall_test(ip, ports=[22, 80, 443]):
+    results = {}
+    for port in ports:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1)
+        try:
+            sock.connect((ip, port))
+            results[port] = "Open"
+        except Exception:
+            results[port] = "Blocked/Filtered"
+        finally:
+            sock.close()
+    return results
+
 # ========================
 # Streamlit UI
 # ========================
@@ -84,7 +98,8 @@ scan_type = st.sidebar.selectbox("Choose Action", [
     "OS Detection",
     "DNS Audit",
     "Traffic Stats",
-    "Vulnerability Scan"
+    "Vulnerability Scan",
+    "Firewall Test"
 ])
 
 if scan_type == "Network Scan":
@@ -127,6 +142,13 @@ elif scan_type == "Vulnerability Scan":
         result = vulnerability_scan(ip)
         st.json(result)
         save_report({"ip": ip, "vulnerabilities": result})
+
+elif scan_type == "Firewall Test":
+    ip = st.text_input("Target IP for Firewall Test", "192.168.1.1")
+    if st.button("Test Firewall"):
+        result = firewall_test(ip)
+        st.json(result)
+        save_report({"ip": ip, "firewall": result})
 
 st.sidebar.markdown("---")
 st.sidebar.write("📄 Reports are saved locally as JSON.")
