@@ -1,14 +1,16 @@
 # Use official Python image
-FROM python:3.10-slim
+FROM python:3.10-slim-bookworm
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # Install system dependencies
 RUN apt-get update && \
-    apt-get install -y nmap && \
-    apt-get clean
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends nmap && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set work directory
 WORKDIR /app

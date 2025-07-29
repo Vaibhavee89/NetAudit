@@ -2,3 +2,4 @@ python-nmap
 psutil
 dnspython
 fpdf
+streamlit
