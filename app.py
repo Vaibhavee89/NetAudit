@@ -5,6 +5,7 @@ import dns.resolver
 import socket
 import json
 from datetime import datetime
+from fpdf import FPDF  # <-- Add this import
 
 # ========================
 # Utility Functions
@@ -67,8 +68,25 @@ def vulnerability_scan(ip):
 
 def save_report(data, name='scan_report.json'):
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    with open(f'report_{timestamp}.json', 'w') as f:
+    json_filename = f'report_{timestamp}.json'
+    pdf_filename = f'report_{timestamp}.pdf'
+    # Save JSON
+    with open(json_filename, 'w') as f:
         json.dump(data, f, indent=2)
+    # Save PDF
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(0, 10, "Network Audit Report", ln=True, align="C")
+    pdf.ln(10)
+    for key, value in data.items():
+        pdf.set_font("Arial", style="B", size=12)
+        pdf.cell(0, 10, f"{key}:", ln=True)
+        pdf.set_font("Arial", size=11)
+        pdf.multi_cell(0, 10, json.dumps(value, indent=2))
+        pdf.ln(2)
+    pdf.output(pdf_filename)
+    return json_filename, pdf_filename
 
 def firewall_test(ip, ports=[22, 80, 443]):
     results = {}
@@ -83,6 +101,21 @@ def firewall_test(ip, ports=[22, 80, 443]):
         finally:
             sock.close()
     return results
+
+def download_report_ui():
+    import glob
+    reports = sorted(glob.glob("report_*.pdf"), reverse=True)
+    if reports:
+        latest_report = reports[0]
+        with open(latest_report, "rb") as f:
+            st.download_button(
+                label="Download Latest Report (PDF)",
+                data=f.read(),
+                file_name=latest_report,
+                mime="application/pdf"
+            )
+    else:
+        st.info("No PDF reports found.")
 
 # ========================
 # Streamlit UI
@@ -151,5 +184,6 @@ elif scan_type == "Firewall Test":
         save_report({"ip": ip, "firewall": result})
 
 st.sidebar.markdown("---")
-st.sidebar.write("📄 Reports are saved locally as JSON.")
+st.sidebar.write("📄 Reports are saved locally as JSON and PDF.")
+download_report_ui()
 
