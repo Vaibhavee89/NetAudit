@@ -29,6 +29,8 @@ def scan_network(subnet):
 def port_scan(ip):
     scanner = nmap.PortScanner()
     scanner.scan(hosts=ip, arguments='-sV')
+    if ip not in scanner.all_hosts():
+        return {"error": f"No scan results for {ip}. Host may be unreachable."}
     ports = []
     for proto in scanner[ip].all_protocols():
         lport = scanner[ip][proto].keys()
