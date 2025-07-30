@@ -6,7 +6,6 @@ import socket
 import json
 from datetime import datetime
 from fpdf import FPDF  # <-- Add this import
-import subprocess
 
 # ========================
 # Utility Functions
@@ -189,9 +188,4 @@ elif scan_type == "Firewall Test":
 st.sidebar.markdown("---")
 st.sidebar.write("📄 Reports are saved locally as JSON and PDF.")
 download_report_ui()
-
-# Print Nmap version
-st.sidebar.header("🔧 Nmap Version")
-nmap_version = subprocess.getoutput("nmap --version")
-st.sidebar.text_area("Nmap Version Info", nmap_version, height=300)
 
