@@ -5,6 +5,8 @@ import dns.resolver
 import socket
 import json
 from datetime import datetime
+from fpdf import FPDF
+import io
 
 # ========================
 # Utility Functions
@@ -12,13 +14,10 @@ from datetime import datetime
 
 def scan_network(subnet):
     scanner = nmap.PortScanner()
-    scanner.scan(hosts=subnet, arguments='-sn')  # Ping scan
+    scanner.scan(hosts=subnet, arguments='-sn')
     live_hosts = []
     for host in scanner.all_hosts():
-        if 'mac' in scanner[host]['addresses']:
-            mac = scanner[host]['addresses']['mac']
-        else:
-            mac = "N/A"
+        mac = scanner[host]['addresses'].get('mac', "N/A")
         live_hosts.append({
             'ip': host,
             'mac': mac,
@@ -31,8 +30,7 @@ def port_scan(ip):
     scanner.scan(hosts=ip, arguments='-sV')
     ports = []
     for proto in scanner[ip].all_protocols():
-        lport = scanner[ip][proto].keys()
-        for port in lport:
+        for port in scanner[ip][proto].keys():
             ports.append({
                 'port': port,
                 'service': scanner[ip][proto][port]['name'],
@@ -68,6 +66,27 @@ def save_report(data, name='scan_report.json'):
     with open(f'report_{timestamp}.json', 'w') as f:
         json.dump(data, f, indent=2)
 
+def generate_pdf(report_data, title="Scan Report"):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt=title, ln=True, align="C")
+    pdf.ln(10)
+
+    if isinstance(report_data, list):
+        for item in report_data:
+            pdf.multi_cell(0, 10, txt=json.dumps(item, indent=2))
+            pdf.ln()
+    elif isinstance(report_data, dict):
+        pdf.multi_cell(0, 10, txt=json.dumps(report_data, indent=2))
+    else:
+        pdf.multi_cell(0, 10, txt=str(report_data))
+
+    # Get PDF as byte string
+    pdf_bytes = pdf.output(dest='S').encode('latin-1')  # 'S' = return as string
+    return io.BytesIO(pdf_bytes)
+
+
 # ========================
 # Streamlit UI
 # ========================
@@ -93,12 +112,18 @@ if scan_type == "Network Scan":
         st.json(result)
         save_report({"subnet": subnet, "results": result})
 
+        pdf = generate_pdf(result, title=f"Network Scan Report ({subnet})")
+        st.download_button("📥 Download PDF Report", pdf, file_name="network_scan_report.pdf", mime="application/pdf")
+
 elif scan_type == "Port & Service Scan":
     ip = st.text_input("Target IP", "192.168.1.1")
     if st.button("Scan Ports"):
         result = port_scan(ip)
         st.json(result)
         save_report({"ip": ip, "ports": result})
+
+        pdf = generate_pdf(result, title=f"Port & Service Scan Report ({ip})")
+        st.download_button("📥 Download PDF Report", pdf, file_name="port_service_report.pdf", mime="application/pdf")
 
 elif scan_type == "OS Detection":
     ip = st.text_input("Target IP for OS detection", "192.168.1.1")
@@ -107,6 +132,9 @@ elif scan_type == "OS Detection":
         st.success(f"Detected OS: {os}")
         save_report({"ip": ip, "os": os})
 
+        pdf = generate_pdf({"ip": ip, "os": os}, title=f"OS Detection Report ({ip})")
+        st.download_button("📥 Download PDF Report", pdf, file_name="os_detection_report.pdf", mime="application/pdf")
+
 elif scan_type == "DNS Audit":
     domain = st.text_input("Enter Domain", "example.com")
     if st.button("Run DNS Audit"):
@@ -114,10 +142,16 @@ elif scan_type == "DNS Audit":
         st.json(result)
         save_report({"domain": domain, "dns": result})
 
+        pdf = generate_pdf(result, title=f"DNS Audit Report ({domain})")
+        st.download_button("📥 Download PDF Report", pdf, file_name="dns_audit_report.pdf", mime="application/pdf")
+
 elif scan_type == "Traffic Stats":
     stats = traffic_stats()
     st.metric("Bytes Sent", stats['sent'])
     st.metric("Bytes Received", stats['recv'])
+
+    pdf = generate_pdf(stats, title="Traffic Stats Report")
+    st.download_button("📥 Download PDF Report", pdf, file_name="traffic_stats_report.pdf", mime="application/pdf")
 
 elif scan_type == "Vulnerability Scan":
     ip = st.text_input("Target IP for Vulnerability Scan", "192.168.1.1")
@@ -126,6 +160,8 @@ elif scan_type == "Vulnerability Scan":
         st.json(result)
         save_report({"ip": ip, "vulnerabilities": result})
 
-st.sidebar.markdown("---")
-st.sidebar.write("📄 Reports are saved locally as JSON.")
+        pdf = generate_pdf(result, title=f"Vulnerability Report ({ip})")
+        st.download_button("📥 Download PDF Report", pdf, file_name="vulnerability_report.pdf", mime="application/pdf")
 
+st.sidebar.markdown("---")
+st.sidebar.write("📄 Reports are saved locally as JSON and downloadable as PDF.")
