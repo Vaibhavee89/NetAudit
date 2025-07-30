@@ -5,8 +5,13 @@ import dns.resolver
 import socket
 import json
 from datetime import datetime
+<<<<<<< HEAD
 from fpdf import FPDF
 import io
+=======
+from fpdf import FPDF  # <-- Add this import
+import subprocess
+>>>>>>> 967c41129fa5375521fc4e604b1dbf23d7332c98
 
 # ========================
 # Utility Functions
@@ -28,6 +33,8 @@ def scan_network(subnet):
 def port_scan(ip):
     scanner = nmap.PortScanner()
     scanner.scan(hosts=ip, arguments='-sV')
+    if ip not in scanner.all_hosts():
+        return {"error": f"No scan results for {ip}. Host may be unreachable."}
     ports = []
     for proto in scanner[ip].all_protocols():
         for port in scanner[ip][proto].keys():
@@ -43,6 +50,8 @@ def port_scan(ip):
 def os_detect(ip):
     scanner = nmap.PortScanner()
     scanner.scan(ip, arguments='-O')
+    if ip not in scanner.all_hosts():
+        return "No scan results. Host may be unreachable."
     return scanner[ip]['osmatch'][0]['name'] if scanner[ip]['osmatch'] else "Unknown"
 
 def dns_audit(domain):
@@ -63,8 +72,54 @@ def vulnerability_scan(ip):
 
 def save_report(data, name='scan_report.json'):
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    with open(f'report_{timestamp}.json', 'w') as f:
+    json_filename = f'report_{timestamp}.json'
+    pdf_filename = f'report_{timestamp}.pdf'
+    # Save JSON
+    with open(json_filename, 'w') as f:
         json.dump(data, f, indent=2)
+    # Save PDF
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(0, 10, "Network Audit Report", ln=True, align="C")
+    pdf.ln(10)
+    for key, value in data.items():
+        pdf.set_font("Arial", style="B", size=12)
+        pdf.cell(0, 10, f"{key}:", ln=True)
+        pdf.set_font("Arial", size=11)
+        pdf.multi_cell(0, 10, json.dumps(value, indent=2))
+        pdf.ln(2)
+    pdf.output(pdf_filename)
+    return json_filename, pdf_filename
+
+def firewall_test(ip, ports=[22, 80, 443]):
+    results = {}
+    for port in ports:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1)
+        try:
+            sock.connect((ip, port))
+            results[port] = "Open"
+        except Exception:
+            results[port] = "Blocked/Filtered"
+        finally:
+            sock.close()
+    return results
+
+def download_report_ui():
+    import glob
+    reports = sorted(glob.glob("report_*.pdf"), reverse=True)
+    if reports:
+        latest_report = reports[0]
+        with open(latest_report, "rb") as f:
+            st.download_button(
+                label="Download Latest Report (PDF)",
+                data=f.read(),
+                file_name=latest_report,
+                mime="application/pdf"
+            )
+    else:
+        st.info("No PDF reports found.")
 
 def generate_pdf(report_data, title="Scan Report"):
     pdf = FPDF()
@@ -101,7 +156,8 @@ scan_type = st.sidebar.selectbox("Choose Action", [
     "OS Detection",
     "DNS Audit",
     "Traffic Stats",
-    "Vulnerability Scan"
+    "Vulnerability Scan",
+    "Firewall Test"
 ])
 
 if scan_type == "Network Scan":
@@ -160,8 +216,26 @@ elif scan_type == "Vulnerability Scan":
         st.json(result)
         save_report({"ip": ip, "vulnerabilities": result})
 
+<<<<<<< HEAD
         pdf = generate_pdf(result, title=f"Vulnerability Report ({ip})")
         st.download_button("📥 Download PDF Report", pdf, file_name="vulnerability_report.pdf", mime="application/pdf")
+=======
+elif scan_type == "Firewall Test":
+    ip = st.text_input("Target IP for Firewall Test", "192.168.1.1")
+    if st.button("Test Firewall"):
+        result = firewall_test(ip)
+        st.json(result)
+        save_report({"ip": ip, "firewall": result})
+
+st.sidebar.markdown("---")
+st.sidebar.write("📄 Reports are saved locally as JSON and PDF.")
+download_report_ui()
+
+# Print Nmap version
+st.sidebar.header("🔧 Nmap Version")
+nmap_version = subprocess.getoutput("nmap --version")
+st.sidebar.text_area("Nmap Version Info", nmap_version, height=300)
+>>>>>>> 967c41129fa5375521fc4e604b1dbf23d7332c98
 
 st.sidebar.markdown("---")
 st.sidebar.write("📄 Reports are saved locally as JSON and downloadable as PDF.")
