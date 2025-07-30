@@ -48,6 +48,8 @@ def port_scan(ip):
 def os_detect(ip):
     scanner = nmap.PortScanner()
     scanner.scan(ip, arguments='-O')
+    if ip not in scanner.all_hosts():
+        return "No scan results. Host may be unreachable."
     return scanner[ip]['osmatch'][0]['name'] if scanner[ip]['osmatch'] else "Unknown"
 
 def dns_audit(domain):
