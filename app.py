@@ -189,10 +189,9 @@ def map_network_topology(subnet):
         ip = host['ip']
         mac = host['mac']
         G.add_node(ip, label=f"{ip}\n{mac}")
-        # Optionally, add edges if you have info about connections
     net = Network(height="500px", width="100%", bgcolor="#222222", font_color="white")
     net.from_nx(G)
-    net.show("topology.html")
+    net.show("topology.html", notebook=False)  # <-- Fix here
     with open("topology.html", "r", encoding="utf-8") as f:
         html = f.read()
     return html
