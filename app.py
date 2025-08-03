@@ -139,6 +139,46 @@ def generate_pdf(report_data, title="Scan Report"):
     pdf_bytes = pdf.output(dest='S').encode('latin-1')  # 'S' = return as string
     return io.BytesIO(pdf_bytes)
 
+def get_firewall_rules():
+    # Run the netsh command and capture output
+    output = subprocess.getoutput('netsh advfirewall firewall show rule name=all')
+    rules = []
+    current_rule = {}
+    for line in output.splitlines():
+        if line.startswith("Rule Name:"):
+            if current_rule:
+                rules.append(current_rule)
+                current_rule = {}
+            current_rule['name'] = line.split(":", 1)[1].strip()
+        elif line.startswith("LocalPort:"):
+            current_rule['port'] = line.split(":", 1)[1].strip()
+        elif line.startswith("Protocol:"):
+            current_rule['protocol'] = line.split(":", 1)[1].strip()
+    if current_rule:
+        rules.append(current_rule)
+    return rules
+
+def firewall_test_all_rules():
+    rules = get_firewall_rules()
+    results = []
+    for rule in rules:
+        port = rule.get('port')
+        protocol = rule.get('protocol', 'TCP')
+        name = rule.get('name')
+        if port and port.isdigit():
+            sock_type = socket.SOCK_STREAM if protocol.upper() == 'TCP' else socket.SOCK_DGRAM
+            sock = socket.socket(socket.AF_INET, sock_type)
+            sock.settimeout(1)
+            try:
+                sock.connect(('127.0.0.1', int(port)))
+                status = "Open"
+            except Exception:
+                status = "Blocked/Filtered"
+            finally:
+                sock.close()
+            results.append({'rule': name, 'port': port, 'protocol': protocol, 'status': status})
+    return results
+
 
 # ========================
 # Streamlit UI
@@ -218,14 +258,12 @@ elif scan_type == "Vulnerability Scan":
         st.download_button("📥 Download PDF Report", pdf, file_name="vulnerability_report.pdf", mime="application/pdf")
 
 elif scan_type == "Firewall Test":
-    ip = st.text_input("Target IP for Firewall Test", "192.168.1.1")
-    if st.button("Test Firewall"):
-        result = firewall_test(ip)
+    if st.button("Test All Firewall Rules"):
+        result = firewall_test_all_rules()
         st.json(result)
-        save_report({"ip": ip, "firewall": result})
-
-        pdf = generate_pdf(result, title=f"Firewall Test Report ({ip})")
-        st.download_button("📥 Download PDF Report", pdf, file_name="firewall_test_report.pdf", mime="application/pdf")
+        save_report({"firewall_rules": result})
+        pdf = generate_pdf(result, title="Firewall Rules Test Report")
+        st.download_button("📥 Download PDF Report", pdf, file_name="firewall_rules_report.pdf", mime="application/pdf")
 
 st.sidebar.markdown("---")
 st.sidebar.write("📄 Reports are saved locally as JSON and PDF.")
