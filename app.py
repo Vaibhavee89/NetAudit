@@ -5,10 +5,9 @@ import dns.resolver
 import socket
 import json
 from datetime import datetime
-<<<<<<< HEAD
+
 from fpdf import FPDF
 import io
-=======
 from fpdf import FPDF  # <-- Add this import
 import subprocess
 
@@ -215,16 +214,18 @@ elif scan_type == "Vulnerability Scan":
         st.json(result)
         save_report({"ip": ip, "vulnerabilities": result})
 
-<<<<<<< HEAD
         pdf = generate_pdf(result, title=f"Vulnerability Report ({ip})")
         st.download_button("📥 Download PDF Report", pdf, file_name="vulnerability_report.pdf", mime="application/pdf")
-=======
+
 elif scan_type == "Firewall Test":
     ip = st.text_input("Target IP for Firewall Test", "192.168.1.1")
     if st.button("Test Firewall"):
         result = firewall_test(ip)
         st.json(result)
         save_report({"ip": ip, "firewall": result})
+
+        pdf = generate_pdf(result, title=f"Firewall Test Report ({ip})")
+        st.download_button("📥 Download PDF Report", pdf, file_name="firewall_test_report.pdf", mime="application/pdf")
 
 st.sidebar.markdown("---")
 st.sidebar.write("📄 Reports are saved locally as JSON and PDF.")
