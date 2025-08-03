@@ -10,6 +10,9 @@ from fpdf import FPDF
 import io
 from fpdf import FPDF  # <-- Add this import
 import subprocess
+import networkx as nx
+from pyvis.network import Network
+import streamlit.components.v1 as components
 
 # ========================
 # Utility Functions
@@ -179,6 +182,21 @@ def firewall_test_all_rules():
             results.append({'rule': name, 'port': port, 'protocol': protocol, 'status': status})
     return results
 
+def map_network_topology(subnet):
+    hosts = scan_network(subnet)
+    G = nx.Graph()
+    for host in hosts:
+        ip = host['ip']
+        mac = host['mac']
+        G.add_node(ip, label=f"{ip}\n{mac}")
+        # Optionally, add edges if you have info about connections
+    net = Network(height="500px", width="100%", bgcolor="#222222", font_color="white")
+    net.from_nx(G)
+    net.show("topology.html")
+    with open("topology.html", "r", encoding="utf-8") as f:
+        html = f.read()
+    return html
+
 
 # ========================
 # Streamlit UI
@@ -186,6 +204,14 @@ def firewall_test_all_rules():
 
 st.set_page_config(page_title="NetAudit - Network Auditing Tool", layout="wide")
 st.title("🛡️ NetAudit – Network Auditing Tool (Backend Prototype)")
+
+st.sidebar.header("📝 Audit Scope & Objectives")
+scope = st.sidebar.text_input("Define Scope (e.g. 192.168.1.0/24, example.com)", "")
+objectives = st.sidebar.text_area("Define Objectives (e.g. Find open ports, check OS, audit DNS)", "")
+
+# Store scope/objectives for use in reports
+user_scope = scope if scope else "Not specified"
+user_objectives = objectives if objectives else "Not specified"
 
 st.sidebar.header("🔍 Audit Options")
 scan_type = st.sidebar.selectbox("Choose Action", [
@@ -195,19 +221,26 @@ scan_type = st.sidebar.selectbox("Choose Action", [
     "DNS Audit",
     "Traffic Stats",
     "Vulnerability Scan",
-    "Firewall Test"
+    "Firewall Test",
+    "Map Network Topology"  # <-- Add this
 ])
 
 if scan_type == "Network Scan":
     subnet = st.text_input("Enter Subnet (e.g. 192.168.1.0/24)", "192.168.1.0/24")
-    if st.button("Scan Network"):
+    permission = st.checkbox("I have permission to scan this network and understand the risks.")
+    if st.button("Scan Network", key="scan_network") and permission:
         result = scan_network(subnet)
         st.success(f"Found {len(result)} live hosts.")
         st.json(result)
-        save_report({"subnet": subnet, "results": result})
-
+        save_report({
+            "scope": user_scope,
+            "objectives": user_objectives,
+            "hosts": result
+        })
         pdf = generate_pdf(result, title=f"Network Scan Report ({subnet})")
         st.download_button("📥 Download PDF Report", pdf, file_name="network_scan_report.pdf", mime="application/pdf")
+    elif st.button("Scan Network", key="scan_network_no_permission") and not permission:
+        st.error("You must confirm you have permission before scanning.")
 
 elif scan_type == "Port & Service Scan":
     ip = st.text_input("Target IP", "192.168.1.1")
@@ -264,6 +297,16 @@ elif scan_type == "Firewall Test":
         save_report({"firewall_rules": result})
         pdf = generate_pdf(result, title="Firewall Rules Test Report")
         st.download_button("📥 Download PDF Report", pdf, file_name="firewall_rules_report.pdf", mime="application/pdf")
+
+elif scan_type == "Map Network Topology":
+    subnet = st.text_input("Enter Subnet for Topology Mapping", "192.168.1.0/24")
+    permission = st.checkbox("I have permission to scan this network and understand the risks.")
+    if st.button("Map Topology", key="map_topology") and permission:
+        st.info("Scanning and mapping network topology...")
+        html = map_network_topology(subnet)
+        components.html(html, height=550, scrolling=True)
+    elif st.button("Map Topology", key="map_topology_no_permission") and not permission:
+        st.error("You must confirm you have permission before mapping topology.")
 
 st.sidebar.markdown("---")
 st.sidebar.write("📄 Reports are saved locally as JSON and PDF.")
