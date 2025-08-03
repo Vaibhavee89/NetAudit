@@ -196,6 +196,13 @@ def map_network_topology(subnet):
         html = f.read()
     return html
 
+def check_for_intrusion(scanned_hosts, genuine_hosts):
+ scanned_ips = {host['ip'] for host in scanned_hosts}
+ genuine_ips = {host['ip'] for host in genuine_hosts}
+ intrusive_ips = scanned_ips - genuine_ips
+ return [host for host in scanned_hosts if host['ip'] in intrusive_ips]
+
+
 
 # ========================
 # Streamlit UI
@@ -214,6 +221,7 @@ user_objectives = objectives if objectives else "Not specified"
 
 st.sidebar.header("🔍 Audit Options")
 scan_type = st.sidebar.selectbox("Choose Action", [
+ "Intrusion Detection",
     "Network Scan",
     "Port & Service Scan",
     "OS Detection",
@@ -224,7 +232,27 @@ scan_type = st.sidebar.selectbox("Choose Action", [
     "Map Network Topology"  # <-- Add this
 ])
 
-if scan_type == "Network Scan":
+if scan_type == "Intrusion Detection":
+ st.header("Intrusion Detection")
+ subnet = st.text_input("Enter Subnet to Scan (e.g. 192.168.1.0/24)", "192.168.1.0/24")
+ genuine_hosts_input = st.text_area("Enter Genuine Hosts (one IP per line)", "192.168.1.1\n192.168.1.100")
+ genuine_hosts = [{"ip": ip.strip()} for ip in genuine_hosts_input.splitlines() if ip.strip()]
+
+ permission = st.checkbox("I have permission to scan this network and understand the risks.")
+ if st.button("Check for Intrusions") and permission:
+ st.info(f"Scanning subnet {subnet} to check for intrusions...")
+ scanned_hosts = scan_network(subnet)
+ intrusions = check_for_intrusion(scanned_hosts, genuine_hosts)
+ if intrusions:
+ st.error("Potential Intrusions Detected:")
+ st.json(intrusions)
+ else:
+ st.success("No intrusions detected based on the genuine hosts list.")
+
+ pdf = generate_pdf(intrusions, title=f"Intrusion Detection Report ({subnet})")
+ st.download_button("📥 Download PDF Report", pdf, file_name="intrusion_detection_report.pdf", mime="application/pdf")
+
+elif scan_type == "Network Scan":
     subnet = st.text_input("Enter Subnet (e.g. 192.168.1.0/24)", "192.168.1.0/24")
     permission = st.checkbox("I have permission to scan this network and understand the risks.")
     if st.button("Scan Network", key="scan_network") and permission:
@@ -296,6 +324,13 @@ elif scan_type == "Firewall Test":
         save_report({"firewall_rules": result})
         pdf = generate_pdf(result, title="Firewall Rules Test Report")
         st.download_button("📥 Download PDF Report", pdf, file_name="firewall_rules_report.pdf", mime="application/pdf")
+
+elif scan_type =="Check for Intrusion":
+    st.header("Intrusion Detection")
+    if st.button("Test For Intrusion Detection"):
+        result = check_for_intrusion()
+        st.json(result)
+        save_report({"intrusions": result})
 
 elif scan_type == "Map Network Topology":
     subnet = st.text_input("Enter Subnet for Topology Mapping", "192.168.1.0/24")
