@@ -240,14 +240,14 @@ if scan_type == "Intrusion Detection":
 
  permission = st.checkbox("I have permission to scan this network and understand the risks.")
  if st.button("Check for Intrusions") and permission:
- st.info(f"Scanning subnet {subnet} to check for intrusions...")
+    st.info(f"Scanning subnet {subnet} to check for intrusions...")
  scanned_hosts = scan_network(subnet)
  intrusions = check_for_intrusion(scanned_hosts, genuine_hosts)
  if intrusions:
- st.error("Potential Intrusions Detected:")
- st.json(intrusions)
+    st.error("Potential Intrusions Detected:")
+    st.json(intrusions)
  else:
- st.success("No intrusions detected based on the genuine hosts list.")
+    st.success("No intrusions detected based on the genuine hosts list.")
 
  pdf = generate_pdf(intrusions, title=f"Intrusion Detection Report ({subnet})")
  st.download_button("📥 Download PDF Report", pdf, file_name="intrusion_detection_report.pdf", mime="application/pdf")
