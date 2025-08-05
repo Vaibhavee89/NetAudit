@@ -7,7 +7,7 @@ import json
 from datetime import datetime
 import pandas as pd
 import io
-from fpdf import FPDF  # <-- Add this import
+from fpdf import FPDF 
 import subprocess
 import networkx as nx
 from pyvis.network import Network
