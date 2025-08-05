@@ -1,0 +1,250 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script src="lib/bindings/utils.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 500px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 100%;
+                 height: 500px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+            <div id="loadingBar">
+              <div class="outerBorder">
+                <div id="text">0%</div>
+                <div id="border">
+                  <div id="bar"></div>
+                </div>
+              </div>
+            </div>
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.0", "label": "192.168.1.0\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.1", "label": "192.168.1.1\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.10", "label": "192.168.1.10\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.100", "label": "192.168.1.100\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.101", "label": "192.168.1.101\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.102", "label": "192.168.1.102\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.103", "label": "192.168.1.103\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.104", "label": "192.168.1.104\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.105", "label": "192.168.1.105\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.106", "label": "192.168.1.106\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.107", "label": "192.168.1.107\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.108", "label": "192.168.1.108\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.109", "label": "192.168.1.109\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.11", "label": "192.168.1.11\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.110", "label": "192.168.1.110\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.111", "label": "192.168.1.111\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.112", "label": "192.168.1.112\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.113", "label": "192.168.1.113\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.114", "label": "192.168.1.114\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.115", "label": "192.168.1.115\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.116", "label": "192.168.1.116\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.117", "label": "192.168.1.117\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.118", "label": "192.168.1.118\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.119", "label": "192.168.1.119\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.12", "label": "192.168.1.12\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.120", "label": "192.168.1.120\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.121", "label": "192.168.1.121\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.122", "label": "192.168.1.122\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.123", "label": "192.168.1.123\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.124", "label": "192.168.1.124\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.125", "label": "192.168.1.125\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.126", "label": "192.168.1.126\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.127", "label": "192.168.1.127\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.128", "label": "192.168.1.128\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.129", "label": "192.168.1.129\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.13", "label": "192.168.1.13\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.130", "label": "192.168.1.130\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.131", "label": "192.168.1.131\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.132", "label": "192.168.1.132\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.133", "label": "192.168.1.133\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.134", "label": "192.168.1.134\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.135", "label": "192.168.1.135\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.136", "label": "192.168.1.136\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.137", "label": "192.168.1.137\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.138", "label": "192.168.1.138\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.139", "label": "192.168.1.139\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.14", "label": "192.168.1.14\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.140", "label": "192.168.1.140\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.141", "label": "192.168.1.141\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.142", "label": "192.168.1.142\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.143", "label": "192.168.1.143\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.144", "label": "192.168.1.144\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.145", "label": "192.168.1.145\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.146", "label": "192.168.1.146\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.147", "label": "192.168.1.147\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.148", "label": "192.168.1.148\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.149", "label": "192.168.1.149\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.15", "label": "192.168.1.15\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.150", "label": "192.168.1.150\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.151", "label": "192.168.1.151\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.152", "label": "192.168.1.152\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.153", "label": "192.168.1.153\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.154", "label": "192.168.1.154\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.155", "label": "192.168.1.155\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.156", "label": "192.168.1.156\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.157", "label": "192.168.1.157\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.158", "label": "192.168.1.158\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.159", "label": "192.168.1.159\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.16", "label": "192.168.1.16\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.160", "label": "192.168.1.160\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.161", "label": "192.168.1.161\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.162", "label": "192.168.1.162\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.163", "label": "192.168.1.163\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.164", "label": "192.168.1.164\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.165", "label": "192.168.1.165\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.166", "label": "192.168.1.166\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.167", "label": "192.168.1.167\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.168", "label": "192.168.1.168\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.169", "label": "192.168.1.169\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.17", "label": "192.168.1.17\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.170", "label": "192.168.1.170\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.171", "label": "192.168.1.171\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.172", "label": "192.168.1.172\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.173", "label": "192.168.1.173\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.174", "label": "192.168.1.174\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.175", "label": "192.168.1.175\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.176", "label": "192.168.1.176\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.177", "label": "192.168.1.177\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.178", "label": "192.168.1.178\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.179", "label": "192.168.1.179\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.18", "label": "192.168.1.18\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.180", "label": "192.168.1.180\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.181", "label": "192.168.1.181\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.182", "label": "192.168.1.182\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.183", "label": "192.168.1.183\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.184", "label": "192.168.1.184\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.185", "label": "192.168.1.185\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.186", "label": "192.168.1.186\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.187", "label": "192.168.1.187\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.188", "label": "192.168.1.188\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.189", "label": "192.168.1.189\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.19", "label": "192.168.1.19\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.190", "label": "192.168.1.190\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.191", "label": "192.168.1.191\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.192", "label": "192.168.1.192\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.193", "label": "192.168.1.193\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.194", "label": "192.168.1.194\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.195", "label": "192.168.1.195\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.196", "label": "192.168.1.196\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.197", "label": "192.168.1.197\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.198", "label": "192.168.1.198\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.199", "label": "192.168.1.199\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.2", "label": "192.168.1.2\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.20", "label": "192.168.1.20\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.200", "label": "192.168.1.200\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.201", "label": "192.168.1.201\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.202", "label": "192.168.1.202\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.203", "label": "192.168.1.203\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.204", "label": "192.168.1.204\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.205", "label": "192.168.1.205\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.206", "label": "192.168.1.206\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.207", "label": "192.168.1.207\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.208", "label": "192.168.1.208\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.209", "label": "192.168.1.209\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.21", "label": "192.168.1.21\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.210", "label": "192.168.1.210\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.211", "label": "192.168.1.211\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.212", "label": "192.168.1.212\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.213", "label": "192.168.1.213\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.214", "label": "192.168.1.214\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.215", "label": "192.168.1.215\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.216", "label": "192.168.1.216\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.217", "label": "192.168.1.217\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.218", "label": "192.168.1.218\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.219", "label": "192.168.1.219\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.22", "label": "192.168.1.22\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.220", "label": "192.168.1.220\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.221", "label": "192.168.1.221\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.222", "label": "192.168.1.222\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.223", "label": "192.168.1.223\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.224", "label": "192.168.1.224\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.225", "label": "192.168.1.225\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.226", "label": "192.168.1.226\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.227", "label": "192.168.1.227\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.228", "label": "192.168.1.228\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.229", "label": "192.168.1.229\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.23", "label": "192.168.1.23\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.230", "label": "192.168.1.230\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.231", "label": "192.168.1.231\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.232", "label": "192.168.1.232\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.233", "label": "192.168.1.233\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.234", "label": "192.168.1.234\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.235", "label": "192.168.1.235\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.236", "label": "192.168.1.236\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.237", "label": "192.168.1.237\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.238", "label": "192.168.1.238\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.239", "label": "192.168.1.239\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.24", "label": "192.168.1.24\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.240", "label": "192.168.1.240\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.241", "label": "192.168.1.241\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.242", "label": "192.168.1.242\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.243", "label": "192.168.1.243\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.244", "label": "192.168.1.244\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.245", "label": "192.168.1.245\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.246", "label": "192.168.1.246\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.247", "label": "192.168.1.247\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.248", "label": "192.168.1.248\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.249", "label": "192.168.1.249\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.25", "label": "192.168.1.25\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.250", "label": "192.168.1.250\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.251", "label": "192.168.1.251\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.252", "label": "192.168.1.252\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.253", "label": "192.168.1.253\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.254", "label": "192.168.1.254\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.255", "label": "192.168.1.255\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.26", "label": "192.168.1.26\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.27", "label": "192.168.1.27\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.28", "label": "192.168.1.28\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.29", "label": "192.168.1.29\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.3", "label": "192.168.1.3\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.30", "label": "192.168.1.30\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.31", "label": "192.168.1.31\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.32", "label": "192.168.1.32\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.33", "label": "192.168.1.33\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.34", "label": "192.168.1.34\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.35", "label": "192.168.1.35\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.36", "label": "192.168.1.36\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.37", "label": "192.168.1.37\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.38", "label": "192.168.1.38\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.39", "label": "192.168.1.39\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.4", "label": "192.168.1.4\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.40", "label": "192.168.1.40\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.41", "label": "192.168.1.41\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.42", "label": "192.168.1.42\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.43", "label": "192.168.1.43\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.44", "label": "192.168.1.44\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.45", "label": "192.168.1.45\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.46", "label": "192.168.1.46\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.47", "label": "192.168.1.47\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.48", "label": "192.168.1.48\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.49", "label": "192.168.1.49\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.5", "label": "192.168.1.5\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.50", "label": "192.168.1.50\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.51", "label": "192.168.1.51\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.52", "label": "192.168.1.52\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.53", "label": "192.168.1.53\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.54", "label": "192.168.1.54\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.55", "label": "192.168.1.55\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.56", "label": "192.168.1.56\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.57", "label": "192.168.1.57\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.58", "label": "192.168.1.58\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.59", "label": "192.168.1.59\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.6", "label": "192.168.1.6\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.60", "label": "192.168.1.60\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.61", "label": "192.168.1.61\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.62", "label": "192.168.1.62\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.63", "label": "192.168.1.63\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.64", "label": "192.168.1.64\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.65", "label": "192.168.1.65\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.66", "label": "192.168.1.66\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.67", "label": "192.168.1.67\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.68", "label": "192.168.1.68\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.69", "label": "192.168.1.69\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.7", "label": "192.168.1.7\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.70", "label": "192.168.1.70\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.71", "label": "192.168.1.71\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.72", "label": "192.168.1.72\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.73", "label": "192.168.1.73\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.74", "label": "192.168.1.74\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.75", "label": "192.168.1.75\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.76", "label": "192.168.1.76\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.77", "label": "192.168.1.77\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.78", "label": "192.168.1.78\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.79", "label": "192.168.1.79\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.8", "label": "192.168.1.8\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.80", "label": "192.168.1.80\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.81", "label": "192.168.1.81\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.82", "label": "192.168.1.82\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.83", "label": "192.168.1.83\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.84", "label": "192.168.1.84\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.85", "label": "192.168.1.85\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.86", "label": "192.168.1.86\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.87", "label": "192.168.1.87\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.88", "label": "192.168.1.88\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.89", "label": "192.168.1.89\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.9", "label": "192.168.1.9\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.90", "label": "192.168.1.90\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.91", "label": "192.168.1.91\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.92", "label": "192.168.1.92\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.93", "label": "192.168.1.93\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.94", "label": "192.168.1.94\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.95", "label": "192.168.1.95\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.96", "label": "192.168.1.96\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.97", "label": "192.168.1.97\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.98", "label": "192.168.1.98\nN/A", "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": "192.168.1.99", "label": "192.168.1.99\nN/A", "shape": "dot", "size": 10}]);
+                  edges = new vis.DataSet([]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

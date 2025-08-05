@@ -6,7 +6,6 @@ import socket
 import json
 from datetime import datetime
 import pandas as pd
-
 from fpdf import FPDF
 import io
 from fpdf import FPDF  # <-- Add this import
@@ -66,138 +65,6 @@ def dns_audit(domain):
 def traffic_stats():
     net = psutil.net_io_counters()
     return {'sent': net.bytes_sent, 'recv': net.bytes_recv}
-
-# def vulnerability_scan(ip):
-#     import nmap
-#     scanner = nmap.PortScanner()
-
-#     vuln_scripts = [
-#         'smb-vuln-ms17-010',
-#         'smb2-vuln-uptime',
-#         'smb-vuln-cve2009-3103',
-#         'smb-vuln-ms08-067',
-#         'rdp-vuln-ms12-020',  # for port 3389
-#         'http-vuln-cve2017-5638',  # for web if 80/443 open
-#         'ssl-ccs-injection',       # SSL vuln
-#     ]
-
-#     target_ports = '135,139,445,3389,593,1025,1433,5357'
-#     results = []
-
-#     for script in vuln_scripts:
-#         try:
-#             scanner.scan(hosts=ip, arguments=f'-Pn -p {target_ports} --script {script}')
-#             host_data = scanner[ip]
-#             hostscripts = host_data.get('hostscript', [])
-#             for vuln in hostscripts:
-#                 results.append({
-#                     'script': vuln.get('id', script),
-#                     'output': vuln.get('output', 'No output provided')
-#                 })
-#         except Exception as e:
-#             results.append({
-#                 'script': script,
-#                 'error': str(e)
-#             })
-
-#     return {
-#         'vulnerabilities': results
-#     } if results else {
-#         "message": "No known vulnerabilities detected with specific scripts.",
-#         "note": f"Ports scanned: {target_ports}. Target may be patched or need deeper scans."
-#     }
-
-# def vulnerability_scan(ip):
-#     scanner = nmap.PortScanner()
-#     scanner.scan(hosts=ip, arguments='--script vuln')
-#     return scanner[ip].get('hostscript', [])
-
-# def run_combined_vuln_scan(target_ip):
-#     # Step 1: Load vulnerability patterns
-#     with open("vuln_data.json", "r") as f:
-#         vuln_data = json.load(f)
-
-#     suspicious_ports = vuln_data.get("vuln_ports", [])
-#     suspicious_vendors = vuln_data.get("suspicious_vendors", [])
-#     suspicious_hostnames = vuln_data.get("suspicious_hostnames", [])
-#     vuln_rules = vuln_data.get("vuln_rules", [])
-
-#     # Step 2: Run Nmap vulnerability scan with scripts
-#     scanner = nmap.PortScanner()
-#     try:
-#         scanner.scan(target_ip, arguments="-sV --script vuln")
-#     except Exception as e:
-#         return {"error": f"Scan failed: {e}"}
-
-#     result = {"target": target_ip, "vulnerabilities": []}
-
-#     if target_ip in scanner.all_hosts():
-#         host_info = scanner[target_ip]
-
-#         # Check open ports and matched ports
-#         for port in host_info.get("tcp", {}):
-#             port_info = host_info["tcp"][port]
-#             port_data = {
-#                 "port": port,
-#                 "name": port_info.get("name", ""),
-#                 "product": port_info.get("product", ""),
-#                 "version": port_info.get("version", ""),
-#                 "script_output": port_info.get("script", {})
-#             }
-
-#             if port in suspicious_ports:
-#                 port_data["matched"] = "Matched Suspicious Port"
-#             result["vulnerabilities"].append(port_data)
-
-#         # Vendor and hostname checks
-#         vendor = host_info.get("vendor", {}).get(host_info.get("addresses", {}).get("mac", ""), "")
-#         hostname = host_info.get("hostnames", [{}])[0].get("name", "")
-
-#         if vendor in suspicious_vendors:
-#             result["vulnerabilities"].append({"type": "Vendor Match", "vendor": vendor})
-#         if hostname in suspicious_hostnames:
-#             result["vulnerabilities"].append({"type": "Suspicious Hostname", "hostname": hostname})
-        
-#         # Vuln rule matching (basic string match in script output)
-#         for port in result["vulnerabilities"]:
-#             scripts = port.get("script_output", {})
-#             if isinstance(scripts, dict):
-#                 for script_name, output in scripts.items():
-#                     for rule in vuln_rules:
-#                         if rule.lower() in output.lower():
-#                             result["vulnerabilities"].append({
-#                                 "type": "Matched Vulnerability Rule",
-#                                 "port": port.get("port"),
-#                                 "rule": rule,
-#                                 "script": script_name,
-#                                 "output": output
-#                             })
-#     return result
-
-# def load_vuln_data_from_csv(file_path="vuln_data.csv"):
-#     df = pd.read_csv(file_path)
-#     vuln_data = {
-#         "vuln_ports": [],
-#         "suspicious_vendors": [],
-#         "suspicious_hostnames": [],
-#         "rules": []
-#     }
-
-#     for _, row in df.iterrows():
-#         if row['match_type'] == 'vuln_port':
-#             vuln_data['vuln_ports'].append(int(row['value']))
-#         elif row['match_type'] == 'suspicious_vendor':
-#             vuln_data['suspicious_vendors'].append(row['value'].lower())
-#         elif row['match_type'] == 'suspicious_hostname':
-#             vuln_data['suspicious_hostnames'].append(row['value'].lower())
-
-#         vuln_data['rules'].append({
-#             "type": row['vuln_type'],
-#             "value": row['value'],
-#             "description": row['description']
-#         })
-
-#     return vuln_data
 
 # Load vulnerability database
 def load_vuln_db():
@@ -424,37 +291,6 @@ def check_for_intrusion(scanned_hosts, genuine_hosts):
  intrusive_ips = scanned_ips - genuine_ips
  return [host for host in scanned_hosts if host['ip'] in intrusive_ips]
 
-# def check_for_intrusion(scanned_hosts, genuine_hosts):
-#     scanned_ips = {host['ip'] for host in scanned_hosts}
-#     genuine_ip_map = {host['ip']: host.get('mac', '') for host in genuine_hosts}
-    
-#     intrusions = []
-
-#     for host in scanned_hosts:
-#         ip = host['ip']
-#         mac = host['mac']
-#         status = host['status']
-        
-#         if ip not in genuine_ip_map:
-#             intrusions.append({
-#                 'ip': ip,
-#                 'mac': mac,
-#                 'status': status,
-#                 'issue': "Unknown IP - Not in genuine list"
-#             })
-#         elif mac != genuine_ip_map[ip] and mac != "N/A":
-#             intrusions.append({
-#                 'ip': ip,
-#                 'mac': mac,
-#                 'expected_mac': genuine_ip_map[ip],
-#                 'status': status,
-#                 'issue': "MAC address mismatch"
-#             })
-
-#     return intrusions
-
-
-
 # ========================
 # Streamlit UI
 # ========================
@@ -503,38 +339,6 @@ if scan_type == "Intrusion Detection":
 
         pdf = generate_pdf(intrusions, title=f"Intrusion Detection Report ({subnet})")
         st.download_button("📥 Download PDF Report", pdf, file_name="intrusion_detection_report.pdf", mime="application/pdf")
-
-# if scan_type == "Intrusion Detection":
-#     st.header("📡 Advanced Intrusion Detection")
-
-#     subnet = st.text_input("Enter Subnet to Scan (e.g. 192.168.1.0/24)", "192.168.1.0/24")
-    
-#     st.markdown("### 🧾 Known (Genuine) Hosts")
-#     genuine_hosts_input = st.text_area("Enter Genuine Hosts (Format: IP[,MAC])", "192.168.1.1,AA:BB:CC:DD:EE:FF\n192.168.1.100")
-#     genuine_hosts = []
-#     for line in genuine_hosts_input.splitlines():
-#         parts = line.strip().split(',')
-#         if len(parts) == 2:
-#             genuine_hosts.append({'ip': parts[0].strip(), 'mac': parts[1].strip().lower()})
-#         elif len(parts) == 1:
-#             genuine_hosts.append({'ip': parts[0].strip(), 'mac': ''})
-
-#     permission = st.checkbox("✅ I have permission to scan this network and understand the risks.")
-
-#     if st.button("🔍 Check for Intrusions") and permission:
-#         st.info(f"Scanning subnet `{subnet}` to check for intrusions...")
-#         scanned_hosts = scan_network(subnet)
-#         intrusions = check_for_intrusion(scanned_hosts, genuine_hosts)
-
-#         if intrusions:
-#             st.error(f"⚠️ {len(intrusions)} Potential Intrusions Detected!")
-#             for intr in intrusions:
-#                 st.json(intr)
-#         else:
-#             st.success("✅ No intrusions detected based on the known hosts.")
-
-#         pdf = generate_pdf(intrusions, title=f"Intrusion Detection Report ({subnet})")
-#         st.download_button("📥 Download PDF Report", pdf, file_name="intrusion_detection_report.pdf", mime="application/pdf")
 
 elif scan_type == "Network Scan":
     subnet = st.text_input("Enter Subnet (e.g. 192.168.1.0/24)", "192.168.1.0/24")
@@ -591,59 +395,6 @@ elif scan_type == "Traffic Stats":
     pdf = generate_pdf(stats, title="Traffic Stats Report")
     st.download_button("📥 Download PDF Report", pdf, file_name="traffic_stats_report.pdf", mime="application/pdf")
 
-# elif scan_type == "Vulnerability Scan":
-#     ip = st.text_input("Target IP for Vulnerability Scan", "192.168.1.1")
-#     if st.button("Scan Vulnerabilities"):
-#         result = vulnerability_scan(ip)
-#         st.json(result)
-#         save_report({"ip": ip, "vulnerabilities": result})
-
-#         pdf = generate_pdf(result, title=f"Vulnerability Report ({ip})")
-#         st.download_button("📥 Download PDF Report", pdf, file_name="vulnerability_report.pdf", mime="application/pdf")
-
-# elif scan_type == "Vulnerability Scan":
-#     st.header("🔍 Vulnerability Scan")
-#     target_ip = st.text_input("Enter Target IP", "192.168.1.1")
-#     permission = st.checkbox("I have permission to scan this IP and understand the risks.")
-
-#     if st.button("Scan for Vulnerabilities") and permission:
-#         st.info(f"Scanning {target_ip} for known vulnerabilities...")
-#         result = run_combined_vuln_scan(target_ip)
-
-#         if "error" in result:
-#             st.error(result["error"])
-#         elif result["vulnerabilities"]:
-#             st.error("⚠️ Potential Vulnerabilities Found:")
-#             st.json(result)
-#         else:
-#             st.success("✅ No known vulnerabilities found.")
-
-#         # Generate PDF report (optional, if you already have generate_pdf())
-#         pdf = generate_pdf(result, title=f"Vulnerability Scan Report - {target_ip}")
-#         st.download_button("📥 Download PDF Report", pdf, file_name="vulnerability_scan_report.pdf", mime="application/pdf")
-
-# elif scan_type == "Vulnerability Scan":
-#     st.header("🔍 Vulnerability Scan")
-#     target_ip = st.text_input("Enter Target IP", "192.168.1.5")
-#     upload = st.file_uploader("Upload Vulnerability CSV", type=["csv"])
-#     permission = st.checkbox("I have permission to scan this target")
-
-#     if st.button("Run Vulnerability Scan") and permission and upload:
-#         # Save uploaded file temporarily
-#         with open("vuln_data.csv", "wb") as f:
-#             f.write(upload.getvalue())
-
-#         st.info("Running Nmap vulnerability scan...")
-#         result = run_nmap_vuln_scan(target_ip)
-
-#         if result:
-#             st.error("⚠️ Vulnerabilities Detected:")
-#             st.json(result)
-#         else:
-#             st.success("✅ No known vulnerabilities found!")
-
-#         pdf = generate_pdf(result, title=f"Vulnerability Report - {target_ip}")
-#         st.download_button("📥 Download PDF Report", pdf, file_name="vulnerability_report.pdf", mime="application/pdf")
 
 elif scan_type == "Vulnerability Scan":
     st.header("🔍 Vulnerability Scan")
@@ -677,12 +428,12 @@ elif scan_type == "Firewall Test":
         pdf = generate_pdf(result, title="Firewall Rules Test Report")
         st.download_button("📥 Download PDF Report", pdf, file_name="firewall_rules_report.pdf", mime="application/pdf")
 
-elif scan_type =="Check for Intrusion":
-    st.header("Intrusion Detection")
-    if st.button("Test For Intrusion Detection"):
-        result = check_for_intrusion()
-        st.json(result)
-        save_report({"intrusions": result})
+# elif scan_type =="Check for Intrusion":
+#     st.header("Intrusion Detection")
+#     if st.button("Test For Intrusion Detection"):
+#         result = check_for_intrusion()
+#         st.json(result)
+#         save_report({"intrusions": result})
 
 elif scan_type == "Map Network Topology":
     subnet = st.text_input("Enter Subnet for Topology Mapping", "192.168.1.0/24")
