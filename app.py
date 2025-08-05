@@ -119,45 +119,45 @@ def run_custom_vuln_scan(ip, keyword):
     return { "error": "No matching vulnerability found." }
 
 # def run_nmap_vuln_scan(target_ip):
-    scanner = nmap.PortScanner()
-    scanner.scan(target_ip, arguments='-sV --script vuln')
+    # scanner = nmap.PortScanner()
+    # scanner.scan(target_ip, arguments='-sV --script vuln')
     
-    detected = []
-    host_info = scanner[target_ip]
-    vuln_data = load_vuln_data_from_csv()
+    # detected = []
+    # host_info = scanner[target_ip]
+    # vuln_data = load_vuln_data_from_csv()
 
-    for proto in host_info.all_protocols():
-        for port in host_info[proto].keys():
-            # Port Vulnerability Check
-            if port in vuln_data['vuln_ports']:
-                detected.append({
-                    "ip": target_ip,
-                    "type": "Open Vulnerable Port",
-                    "port": port,
-                    "description": f"Port {port} is marked as vulnerable"
-                })
+    # for proto in host_info.all_protocols():
+    #     for port in host_info[proto].keys():
+    #         # Port Vulnerability Check
+    #         if port in vuln_data['vuln_ports']:
+    #             detected.append({
+    #                 "ip": target_ip,
+    #                 "type": "Open Vulnerable Port",
+    #                 "port": port,
+    #                 "description": f"Port {port} is marked as vulnerable"
+    #             })
 
-    # Hostname & Vendor (You can pass this info from scan_network function)
-    hostname = host_info.hostname().lower()
-    vendor = host_info['addresses'].get('mac_vendor', 'unknown').lower()
+    # # Hostname & Vendor (You can pass this info from scan_network function)
+    # hostname = host_info.hostname().lower()
+    # vendor = host_info['addresses'].get('mac_vendor', 'unknown').lower()
 
-    if hostname in vuln_data['suspicious_hostnames']:
-        detected.append({
-            "ip": target_ip,
-            "type": "Suspicious Hostname",
-            "value": hostname,
-            "description": "Hostname matches a suspicious pattern"
-        })
+    # if hostname in vuln_data['suspicious_hostnames']:
+    #     detected.append({
+    #         "ip": target_ip,
+    #         "type": "Suspicious Hostname",
+    #         "value": hostname,
+    #         "description": "Hostname matches a suspicious pattern"
+    #     })
 
-    if vendor in vuln_data['suspicious_vendors']:
-        detected.append({
-            "ip": target_ip,
-            "type": "Suspicious Vendor",
-            "value": vendor,
-            "description": "Vendor matches a flagged manufacturer"
-        })
+    # if vendor in vuln_data['suspicious_vendors']:
+    #     detected.append({
+    #         "ip": target_ip,
+    #         "type": "Suspicious Vendor",
+    #         "value": vendor,
+    #         "description": "Vendor matches a flagged manufacturer"
+    #     })
 
-    return detected
+    # return detected
 
 
 def save_report(data, name='scan_report.json'):
