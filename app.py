@@ -148,7 +148,6 @@ def run_custom_vuln_scan(ip, keyword):
     return { "error": "No matching vulnerability found." }
 
 
-
 def save_report(data, name='scan_report.json'):
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     json_filename = f'report_{timestamp}.json'
