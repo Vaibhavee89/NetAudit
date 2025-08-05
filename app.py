@@ -6,13 +6,15 @@ import socket
 import json
 from datetime import datetime
 import pandas as pd
-from fpdf import FPDF
 import io
 from fpdf import FPDF  # <-- Add this import
 import subprocess
 import networkx as nx
 from pyvis.network import Network
 import streamlit.components.v1 as components
+from scapy.all import sniff
+from scapy.layers.inet import IP, TCP, UDP, ICMP
+
 
 # ========================
 # Utility Functions
@@ -62,9 +64,36 @@ def dns_audit(domain):
     except Exception as e:
         return [f"DNS lookup failed: {str(e)}"]
 
-def traffic_stats():
-    net = psutil.net_io_counters()
-    return {'sent': net.bytes_sent, 'recv': net.bytes_recv}
+def capture_packets(count=50):
+    packets = sniff(count=count, timeout=10)
+    summary = []
+    protocol_counts = {"TCP": 0, "UDP": 0, "ICMP": 0, "Other": 0}
+
+    for pkt in packets:
+        proto = "Other"
+        if IP in pkt:
+            src = pkt[IP].src
+            dst = pkt[IP].dst
+            size = len(pkt)
+            if TCP in pkt:
+                proto = "TCP"
+            elif UDP in pkt:
+                proto = "UDP"
+            elif ICMP in pkt:
+                proto = "ICMP"
+            else:
+                proto = pkt.lastlayer().name
+
+            protocol_counts[proto] = protocol_counts.get(proto, 0) + 1
+
+            summary.append({
+                "Source": src,
+                "Destination": dst,
+                "Protocol": proto,
+                "Size": size
+            })
+
+    return summary, protocol_counts
 
 # Load vulnerability database
 def load_vuln_db():
@@ -118,46 +147,6 @@ def run_custom_vuln_scan(ip, keyword):
                 return { "vuln": entry['name'], "result": result }
     return { "error": "No matching vulnerability found." }
 
-# def run_nmap_vuln_scan(target_ip):
-    scanner = nmap.PortScanner()
-    scanner.scan(target_ip, arguments='-sV --script vuln')
-    
-    detected = []
-    host_info = scanner[target_ip]
-    vuln_data = load_vuln_data_from_csv()
-
-    for proto in host_info.all_protocols():
-        for port in host_info[proto].keys():
-            # Port Vulnerability Check
-            if port in vuln_data['vuln_ports']:
-                detected.append({
-                    "ip": target_ip,
-                    "type": "Open Vulnerable Port",
-                    "port": port,
-                    "description": f"Port {port} is marked as vulnerable"
-                })
-
-    # Hostname & Vendor (You can pass this info from scan_network function)
-    hostname = host_info.hostname().lower()
-    vendor = host_info['addresses'].get('mac_vendor', 'unknown').lower()
-
-    if hostname in vuln_data['suspicious_hostnames']:
-        detected.append({
-            "ip": target_ip,
-            "type": "Suspicious Hostname",
-            "value": hostname,
-            "description": "Hostname matches a suspicious pattern"
-        })
-
-    if vendor in vuln_data['suspicious_vendors']:
-        detected.append({
-            "ip": target_ip,
-            "type": "Suspicious Vendor",
-            "value": vendor,
-            "description": "Vendor matches a flagged manufacturer"
-        })
-
-    return detected
 
 
 def save_report(data, name='scan_report.json'):
@@ -388,12 +377,24 @@ elif scan_type == "DNS Audit":
         st.download_button("📥 Download PDF Report", pdf, file_name="dns_audit_report.pdf", mime="application/pdf")
 
 elif scan_type == "Traffic Stats":
-    stats = traffic_stats()
-    st.metric("Bytes Sent", stats['sent'])
-    st.metric("Bytes Received", stats['recv'])
+    st.header("📊 Real-Time Traffic Analysis")
+    packet_count = st.slider("Number of Packets to Capture", 10, 200, 50)
+    if st.button("Capture Packets"):
+        with st.spinner("Capturing packets..."):
+            captured, proto_stats = capture_packets(packet_count)
+            st.success(f"Captured {len(captured)} packets.")
 
-    pdf = generate_pdf(stats, title="Traffic Stats Report")
-    st.download_button("📥 Download PDF Report", pdf, file_name="traffic_stats_report.pdf", mime="application/pdf")
+            # Show protocol distribution
+            st.subheader("Protocol Distribution")
+            st.json(proto_stats)
+
+            # Show captured packet summary
+            st.subheader("Packet Details")
+            st.dataframe(captured)
+
+            # Save as PDF
+            pdf = generate_pdf(captured, title="Live Packet Capture Report")
+            st.download_button("📥 Download PDF Report", pdf, file_name="packet_capture_report.pdf", mime="application/pdf")
 
 
 elif scan_type == "Vulnerability Scan":
@@ -428,12 +429,6 @@ elif scan_type == "Firewall Test":
         pdf = generate_pdf(result, title="Firewall Rules Test Report")
         st.download_button("📥 Download PDF Report", pdf, file_name="firewall_rules_report.pdf", mime="application/pdf")
 
-# elif scan_type =="Check for Intrusion":
-#     st.header("Intrusion Detection")
-#     if st.button("Test For Intrusion Detection"):
-#         result = check_for_intrusion()
-#         st.json(result)
-#         save_report({"intrusions": result})
 
 elif scan_type == "Map Network Topology":
     subnet = st.text_input("Enter Subnet for Topology Mapping", "192.168.1.0/24")
