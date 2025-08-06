@@ -29,20 +29,24 @@ def periodic_scans(subnet, ip, domain, interval=300):  # Default: every 5 min
             report = {"timestamp": timestamp}
 
             # Network Scan
-            report["network_scan"] = scan_network(subnet)
+            network_result = scan_network(subnet)
+            report["network_scan"] = network_result
 
             # Port Scan
-            report["port_scan"] = port_scan(ip)
+            port_result = port_scan(ip)
+            report["port_scan"] = port_result
 
             # OS Detection
-            report["os_detection"] = os_detect(ip)
+            os_result = os_detect(ip)
+            report["os_detection"] = os_result
 
             # DNS Audit
-            report["dns_audit"] = dns_audit(domain)
+            dns_result = dns_audit(domain)
+            report["dns_audit"] = dns_result
 
             # Traffic
-            packets, proto_stats = capture_packets(count=50)
-            report["traffic_stats"] = {"packets": packets, "protocols": proto_stats}
+            packets, proto_stats, capture_time = capture_packets(count=50)
+            report["traffic_stats"] = {"packets": packets, "protocols": proto_stats, "duration": capture_time}
 
             # Save Report
             save_report(report)
@@ -54,6 +58,7 @@ def periodic_scans(subnet, ip, domain, interval=300):  # Default: every 5 min
         time.sleep(interval)  # Sleep before next run
 
 def scan_network(subnet):
+    start_time = time.time()
     scanner = nmap.PortScanner()
     scanner.scan(hosts=subnet, arguments='-sn')
     live_hosts = []
@@ -64,13 +69,17 @@ def scan_network(subnet):
             'mac': mac,
             'status': scanner[host].state()
         })
-    return live_hosts
+    end_time = time.time()
+    scan_duration = end_time - start_time
+    return {"hosts": live_hosts, "duration": scan_duration, "count": len(live_hosts)}
 
 def port_scan(ip):
+    start_time = time.time()
     scanner = nmap.PortScanner()
     scanner.scan(hosts=ip, arguments='-sV -p 1-65535 -T4')
     if ip not in scanner.all_hosts():
-        return {"error": f"No scan results for {ip}. Host may be unreachable."}
+        end_time = time.time()
+        return {"error": f"No scan results for {ip}. Host may be unreachable.", "duration": end_time - start_time}
     ports = []
     for proto in scanner[ip].all_protocols():
         for port in scanner[ip][proto].keys():
@@ -81,23 +90,37 @@ def port_scan(ip):
                 'product': scanner[ip][proto][port].get('product', ''),
                 'version': scanner[ip][proto][port].get('version', '')
             })
-    return ports
+    end_time = time.time()
+    scan_duration = end_time - start_time
+    return {"ports": ports, "duration": scan_duration, "count": len(ports)}
 
 def os_detect(ip):
+    start_time = time.time()
     scanner = nmap.PortScanner()
     scanner.scan(ip, arguments='-O')
     if ip not in scanner.all_hosts():
-        return "No scan results. Host may be unreachable."
-    return scanner[ip]['osmatch'][0]['name'] if scanner[ip]['osmatch'] else "Unknown"
+        end_time = time.time()
+        return {"os": "No scan results. Host may be unreachable.", "duration": end_time - start_time}
+    detected_os = scanner[ip]['osmatch'][0]['name'] if scanner[ip]['osmatch'] else "Unknown"
+    end_time = time.time()
+    scan_duration = end_time - start_time
+    return {"os": detected_os, "duration": scan_duration}
 
 def dns_audit(domain):
+    start_time = time.time()
     try:
         records = dns.resolver.resolve(domain, 'A')
-        return [r.to_text() for r in records]
+        record_list = [r.to_text() for r in records]
+        end_time = time.time()
+        scan_duration = end_time - start_time
+        return {"records": record_list, "duration": scan_duration, "count": len(record_list)}
     except Exception as e:
-        return [f"DNS lookup failed: {str(e)}"]
+        end_time = time.time()
+        scan_duration = end_time - start_time
+        return {"records": [f"DNS lookup failed: {str(e)}"], "duration": scan_duration, "count": 0}
 
 def capture_packets(count=50):
+    start_time = time.time()
     packets = sniff(count=count, timeout=10)
     summary = []
     protocol_counts = {"TCP": 0, "UDP": 0, "ICMP": 0, "Other": 0}
@@ -126,7 +149,9 @@ def capture_packets(count=50):
                 "Size": size
             })
 
-    return summary, protocol_counts
+    end_time = time.time()
+    capture_duration = end_time - start_time
+    return summary, protocol_counts, capture_duration
 
 # Load vulnerability database
 def load_vuln_db():
@@ -369,8 +394,9 @@ if mode == "Manual Mode":
         permission = st.checkbox("I have permission to scan this network and understand the risks.")
         if st.button("Check for Intrusions") and permission:
             st.info(f"Scanning subnet {subnet} to check for intrusions...")
-            scanned_hosts = scan_network(subnet)
-            intrusions = check_for_intrusion(scanned_hosts, genuine_hosts)
+            scan_result = scan_network(subnet)
+            st.info(f"Network scan completed in {scan_result['duration']:.2f} seconds")
+            intrusions = check_for_intrusion(scan_result['hosts'], genuine_hosts)
         
             if intrusions:
                 st.error("Potential Intrusions Detected:")
@@ -389,7 +415,7 @@ if mode == "Manual Mode":
         if st.button("Scan Network"):
             if permission:
                 result = scan_network(subnet)
-                st.success(f"Found {len(result)} live hosts.")
+                st.success(f"Found {result['count']} live hosts in {result['duration']:.2f} seconds.")
                 st.json(result)
 
                 save_report({
@@ -408,6 +434,10 @@ if mode == "Manual Mode":
         ip = st.text_input("Target IP", "192.168.1.1")
         if st.button("Scan Ports"):
             result = port_scan(ip)
+            if "error" in result:
+                st.error(f"Scan failed in {result['duration']:.2f} seconds: {result['error']}")
+            else:
+                st.success(f"Found {result['count']} open ports in {result['duration']:.2f} seconds.")
             st.json(result)
             save_report({"ip": ip, "ports": result})
 
@@ -417,9 +447,9 @@ if mode == "Manual Mode":
     elif scan_type == "OS Detection":
         ip = st.text_input("Target IP for OS detection", "192.168.1.1")
         if st.button("Detect OS"):
-            os = os_detect(ip)
-            st.success(f"Detected OS: {os}")
-            save_report({"ip": ip, "os": os})
+            result = os_detect(ip)
+            st.success(f"Detected OS: {result['os']} (completed in {result['duration']:.2f} seconds)")
+            save_report({"ip": ip, "os_detection": result})
 
             pdf = generate_pdf({"ip": ip, "os": os}, title=f"OS Detection Report ({ip})")
             st.download_button("📥 Download PDF Report", pdf, file_name="os_detection_report.pdf", mime="application/pdf")
@@ -428,6 +458,7 @@ if mode == "Manual Mode":
         domain = st.text_input("Enter Domain", "example.com")
         if st.button("Run DNS Audit"):
             result = dns_audit(domain)
+            st.success(f"DNS audit completed in {result['duration']:.2f} seconds. Found {result['count']} records.")
             st.json(result)
             save_report({"domain": domain, "dns": result})
 
@@ -439,8 +470,8 @@ if mode == "Manual Mode":
         packet_count = st.slider("Number of Packets to Capture", 10, 200, 50)
         if st.button("Capture Packets"):
             with st.spinner("Capturing packets..."):
-                captured, proto_stats = capture_packets(packet_count)
-                st.success(f"Captured {len(captured)} packets.")
+                captured, proto_stats, capture_time = capture_packets(packet_count)
+                st.success(f"Captured {len(captured)} packets in {capture_time:.2f} seconds.")
 
                 # Show protocol distribution
                 st.subheader("Protocol Distribution")
@@ -451,7 +482,8 @@ if mode == "Manual Mode":
                 st.dataframe(captured)  
 
                 # Save as PDF
-                pdf = generate_pdf(captured, title="Live Packet Capture Report")
+                report_data = {"packets": captured, "protocols": proto_stats, "duration": capture_time}
+                pdf = generate_pdf(report_data, title="Live Packet Capture Report")
                 st.download_button("📥 Download PDF Report", pdf, file_name="packet_capture_report.pdf", mime="application/pdf")
 
 

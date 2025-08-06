@@ -26,6 +26,7 @@ app.secret_key = 'your-secret-key-change-this'  # Change this in production
 # ========================
 
 def scan_network(subnet):
+    start_time = time.time()
     scanner = nmap.PortScanner()
     scanner.scan(hosts=subnet, arguments='-sn')
     live_hosts = []
@@ -36,7 +37,9 @@ def scan_network(subnet):
             'mac': mac,
             'status': scanner[host].state()
         })
-    return live_hosts
+    end_time = time.time()
+    scan_duration = end_time - start_time
+    return {"hosts": live_hosts, "duration": scan_duration, "count": len(live_hosts)}
 
 def port_scan(ip, ports=None):
     start_time = time.time()
@@ -76,6 +79,7 @@ def dns_audit(domain):
         return [f"DNS lookup failed: {str(e)}"]
 
 def capture_packets(count=50):
+    start_time = time.time()
     packets = sniff(count=count, timeout=10)
     summary = []
     protocol_counts = {"TCP": 0, "UDP": 0, "ICMP": 0, "Other": 0}
@@ -103,8 +107,9 @@ def capture_packets(count=50):
                 "Protocol": proto,
                 "Size": size
             })
-
-    return summary, protocol_counts
+    end_time = time.time()
+    capture_duration = end_time - start_time
+    return summary, protocol_counts, capture_duration
 
 def load_vuln_db():
     try:
@@ -117,17 +122,21 @@ def load_vuln_db():
         return []
 
 def run_nmap_script(ip, script, port=None):
+    start_time = time.time()
     nm = nmap.PortScanner()
     args = f"--script={script}"
     if port:
         args += f" -p {port}"
     nm.scan(hosts=ip, arguments=args)
-    return nm[ip] if ip in nm.all_hosts() else {}
+    end_time = time.time()
+    script_duration = end_time - start_time
+    return nm[ip] if ip in nm.all_hosts() else {}, script_duration
 
 def run_auto_vuln_scan(ip):
+    start_time = time.time()
     nm = nmap.PortScanner()
     nm.scan(hosts=ip, arguments="-O -sS")
-    
+
     os_match = nm[ip].get('osmatch', []) if ip in nm.all_hosts() else []
     ports = [int(p) for p in nm[ip]['tcp'].keys()] if ip in nm.all_hosts() and 'tcp' in nm[ip] else []
 
@@ -145,32 +154,38 @@ def run_auto_vuln_scan(ip):
     for entry in vuln_db:
         if any(p in ports for p in entry['ports']) and detected_os in entry['os']:
             for port in entry['ports']:
-                result = run_nmap_script(ip, entry['nmap_script'], port)
+                result, _ = run_nmap_script(ip, entry['nmap_script'], port)
                 results.append({ "vuln": entry['name'], "result": result })
-
-    return results
+    end_time = time.time()
+    scan_duration = end_time - start_time
+    return results, scan_duration
 
 def run_custom_vuln_scan(ip, keyword):
+    start_time = time.time()
     vuln_db = load_vuln_db()
     for entry in vuln_db:
         if keyword.lower() in entry['name'].lower():
             for port in entry['ports']:
-                result = run_nmap_script(ip, entry['nmap_script'], port)
-                return { "vuln": entry['name'], "result": result }
-    return { "error": "No matching vulnerability found." }
+                result, _ = run_nmap_script(ip, entry['nmap_script'], port)
+                end_time = time.time()
+                scan_duration = end_time - start_time
+                return { "vuln": entry['name'], "result": result, "duration": scan_duration }
+    end_time = time.time()
+    scan_duration = end_time - start_time
+    return { "error": "No matching vulnerability found.", "duration": scan_duration }
 
 def save_report(data, name='scan_report'):
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     json_filename = f'reports/report_{timestamp}.json'
     pdf_filename = f'reports/report_{timestamp}.pdf'
-    
+
     # Create reports directory if it doesn't exist
     os.makedirs('reports', exist_ok=True)
-    
+
     # Save JSON
     with open(json_filename, 'w') as f:
         json.dump(data, f, indent=2)
-    
+
     # Save PDF
     pdf = FPDF()
     pdf.add_page()
@@ -187,6 +202,7 @@ def save_report(data, name='scan_report'):
     return json_filename, pdf_filename
 
 def generate_pdf(report_data, title="Scan Report"):
+    start_time = time.time()
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
@@ -204,9 +220,12 @@ def generate_pdf(report_data, title="Scan Report"):
 
     # Get PDF as byte string
     pdf_bytes = pdf.output(dest='S').encode('latin-1')
-    return io.BytesIO(pdf_bytes)
+    end_time = time.time()
+    pdf_generation_duration = end_time - start_time
+    return io.BytesIO(pdf_bytes), pdf_generation_duration
 
 def firewall_test(ip, ports=[22, 80, 443]):
+    start_time = time.time()
     results = {}
     for port in ports:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -218,9 +237,12 @@ def firewall_test(ip, ports=[22, 80, 443]):
             results[port] = "Blocked/Filtered"
         finally:
             sock.close()
-    return results
+    end_time = time.time()
+    test_duration = end_time - start_time
+    return results, test_duration
 
 def get_firewall_rules():
+    start_time = time.time()
     try:
         output = subprocess.getoutput('netsh advfirewall firewall show rule name=all')
         rules = []
@@ -237,12 +259,17 @@ def get_firewall_rules():
                 current_rule['protocol'] = line.split(":", 1)[1].strip()
         if current_rule:
             rules.append(current_rule)
-        return rules
+        end_time = time.time()
+        rules_duration = end_time - start_time
+        return rules, rules_duration
     except Exception as e:
-        return [{"error": f"Failed to get firewall rules: {str(e)}"}]
+        end_time = time.time()
+        rules_duration = end_time - start_time
+        return [{"error": f"Failed to get firewall rules: {str(e)}"}], rules_duration
 
 def firewall_test_all_rules():
-    rules = get_firewall_rules()
+    start_time = time.time()
+    rules, _ = get_firewall_rules()
     results = []
     for rule in rules:
         port = rule.get('port')
@@ -260,32 +287,40 @@ def firewall_test_all_rules():
             finally:
                 sock.close()
             results.append({'rule': name, 'port': port, 'protocol': protocol, 'status': status})
-    return results
+    end_time = time.time()
+    test_duration = end_time - start_time
+    return results, test_duration
 
 def map_network_topology(subnet):
+    start_time = time.time()
     hosts = scan_network(subnet)
     G = nx.Graph()
-    for host in hosts:
+    for host in hosts['hosts']:
         ip = host['ip']
         mac = host['mac']
         G.add_node(ip, label=f"{ip}\\n{mac}")
-    
+
     net = Network(height="500px", width="100%", bgcolor="#222222", font_color="white")
     net.from_nx(G)
-    
+
     # Save to static directory
     os.makedirs('static', exist_ok=True)
     net.show("static/topology.html", notebook=False)
-    
+    end_time = time.time()
+    topology_duration = end_time - start_time
+
     with open("static/topology.html", "r", encoding="utf-8") as f:
         html = f.read()
-    return html
+    return html, topology_duration
 
 def check_for_intrusion(scanned_hosts, genuine_hosts):
+    start_time = time.time()
     scanned_ips = {host['ip'] for host in scanned_hosts}
     genuine_ips = {host['ip'] for host in genuine_hosts}
     intrusive_ips = scanned_ips - genuine_ips
-    return [host for host in scanned_hosts if host['ip'] in intrusive_ips]
+    end_time = time.time()
+    intrusion_check_duration = end_time - start_time
+    return [host for host in scanned_hosts if host['ip'] in intrusive_ips], intrusion_check_duration
 
 # ========================
 # Flask Routes
@@ -336,7 +371,7 @@ def intrusion_detection_page():
 def api_scan_network():
     data = request.get_json()
     subnet = data.get('subnet', '192.168.1.0/24')
-    
+
     try:
         result = scan_network(subnet)
         return jsonify({'success': True, 'data': result})
@@ -349,8 +384,8 @@ def api_port_scan():
     ip = data.get('ip')
     ports = data.get('ports')
     try:
-        result = port_scan(ip, ports)
-        return jsonify({'success': True, 'data': result})
+        result, duration = port_scan(ip, ports)
+        return jsonify({'success': True, 'data': result, 'duration': duration})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -358,7 +393,7 @@ def api_port_scan():
 def api_os_detect():
     data = request.get_json()
     ip = data.get('ip')
-    
+
     try:
         result = os_detect(ip)
         return jsonify({'success': True, 'data': result})
@@ -369,7 +404,7 @@ def api_os_detect():
 def api_dns_audit():
     data = request.get_json()
     domain = data.get('domain')
-    
+
     try:
         result = dns_audit(domain)
         return jsonify({'success': True, 'data': result})
@@ -380,10 +415,10 @@ def api_dns_audit():
 def api_capture_packets():
     data = request.get_json()
     count = data.get('count', 50)
-    
+
     try:
-        captured, proto_stats = capture_packets(count)
-        return jsonify({'success': True, 'data': {'packets': captured, 'stats': proto_stats}})
+        captured, proto_stats, duration = capture_packets(count)
+        return jsonify({'success': True, 'data': {'packets': captured, 'stats': proto_stats}, 'duration': duration})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -393,21 +428,22 @@ def api_vulnerability_scan():
     ip = data.get('ip')
     scan_mode = data.get('mode', 'auto')
     keyword = data.get('keyword', '')
-    
+
     try:
         if scan_mode == 'auto':
-            result = run_auto_vuln_scan(ip)
+            result, duration = run_auto_vuln_scan(ip)
         else:
             result = run_custom_vuln_scan(ip, keyword)
-        return jsonify({'success': True, 'data': result})
+            duration = result.get('duration', 0) # Assuming run_custom_vuln_scan returns duration
+        return jsonify({'success': True, 'data': result, 'duration': duration})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/firewall_test', methods=['POST'])
 def api_firewall_test():
     try:
-        result = firewall_test_all_rules()
-        return jsonify({'success': True, 'data': result})
+        result, duration = firewall_test_all_rules()
+        return jsonify({'success': True, 'data': result, 'duration': duration})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -415,10 +451,10 @@ def api_firewall_test():
 def api_network_topology():
     data = request.get_json()
     subnet = data.get('subnet', '192.168.1.0/24')
-    
+
     try:
-        html_content = map_network_topology(subnet)
-        return jsonify({'success': True, 'data': html_content})
+        html_content, duration = map_network_topology(subnet)
+        return jsonify({'success': True, 'data': html_content, 'duration': duration})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -428,11 +464,11 @@ def api_intrusion_detection():
     subnet = data.get('subnet', '192.168.1.0/24')
     genuine_hosts_list = data.get('genuine_hosts', [])
     genuine_hosts = [{"ip": ip.strip()} for ip in genuine_hosts_list if ip.strip()]
-    
+
     try:
         scanned_hosts = scan_network(subnet)
-        intrusions = check_for_intrusion(scanned_hosts, genuine_hosts)
-        return jsonify({'success': True, 'data': intrusions})
+        intrusions, duration = check_for_intrusion(scanned_hosts['hosts'], genuine_hosts)
+        return jsonify({'success': True, 'data': intrusions, 'duration': duration})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -442,15 +478,17 @@ def api_download_report():
     report_data = data.get('data')
     title = data.get('title', 'Network Audit Report')
     filename = data.get('filename', 'report.pdf')
-    
+
     try:
-        pdf_buffer = generate_pdf(report_data, title)
-        return send_file(
+        pdf_buffer, duration = generate_pdf(report_data, title)
+        response = send_file(
             pdf_buffer,
             mimetype='application/pdf',
             as_attachment=True,
             download_name=filename
         )
+        response.headers['X-Report-Duration'] = str(duration)
+        return response
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -485,10 +523,10 @@ if __name__ == '__main__':
     os.makedirs('reports', exist_ok=True)
     os.makedirs('static', exist_ok=True)
     os.makedirs('templates', exist_ok=True)
-    
+
     # Create empty vuln_db.json if it doesn't exist
     if not os.path.exists('vuln_db.json'):
         with open('vuln_db.json', 'w') as f:
             json.dump([], f)
-    
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+
+    app.run(debug=True, host='0.0.0.0', port=5000)
