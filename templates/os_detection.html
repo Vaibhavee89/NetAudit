@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}OS Detection - NetAudit{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-desktop"></i> Operating System Detection</h2>
+        <p class="text-muted">Identify the operating system of target hosts using fingerprinting techniques.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-cogs"></i> Detection Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form id="osDetectionForm">
+                    <div class="mb-3">
+                        <label for="targetIp" class="form-label">Target IP Address</label>
+                        <input type="text" class="form-control" id="targetIp" value="192.168.1.1" required>
+                        <div class="form-text">Enter the IP address for OS detection</div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="permission" required>
+                        <label class="form-check-label" for="permission">
+                            I have permission to scan this host
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-info w-100">
+                        <i class="fas fa-play"></i> Detect Operating System
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-desktop"></i> Detection Results</h5>
+                <div id="scanStats" class="badge bg-secondary">Ready</div>
+            </div>
+            <div class="card-body">
+                <div id="resultsContainer" style="display: none;">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Detected Operating System:</h6>
+                        <h4 id="osResult" class="mb-0"></h4>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button class="btn btn-success" id="downloadPdfBtn">
+                            <i class="fas fa-file-pdf"></i> Download PDF Report
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="noResults" class="text-center text-muted py-5">
+                    <i class="fas fa-desktop fa-3x mb-3"></i>
+                    <h5>No detection results yet</h5>
+                    <p>Enter a target IP and click "Detect Operating System" to begin.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-info-circle"></i> OS Detection Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Detection Method</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success"></i> TCP/IP Stack Fingerprinting</li>
+                            <li><i class="fas fa-check text-success"></i> Service Banner Analysis</li>
+                            <li><i class="fas fa-check text-success"></i> Network Behavior Analysis</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Accuracy Notes</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-info text-info"></i> Results may vary based on firewall rules</li>
+                            <li><i class="fas fa-info text-info"></i> Some systems may mask their OS signature</li>
+                            <li><i class="fas fa-info text-info"></i> Best results with open ports available</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let detectionResult = null;
+let currentTarget = '';
+
+document.getElementById('osDetectionForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (!document.getElementById('permission').checked) {
+        showAlert('You must confirm you have permission before scanning.', 'danger');
+        return;
+    }
+    
+    const targetIp = document.getElementById('targetIp').value;
+    currentTarget = targetIp;
+    
+    showLoading();
+    document.getElementById('scanStats').textContent = 'Detecting...';
+    document.getElementById('scanStats').className = 'badge bg-warning';
+    
+    fetch('/api/os_detect', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            ip: targetIp
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        
+        if (data.success) {
+            detectionResult = data.data;
+            displayResults(data.data);
+            document.getElementById('scanStats').textContent = 'Detection completed';
+            document.getElementById('scanStats').className = 'badge bg-success';
+        } else {
+            showAlert('Detection failed: ' + data.error, 'danger');
+            document.getElementById('scanStats').textContent = 'Detection failed';
+            document.getElementById('scanStats').className = 'badge bg-danger';
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error:', error);
+        showAlert('Network error: ' + error.message, 'danger');
+        document.getElementById('scanStats').textContent = 'Error';
+        document.getElementById('scanStats').className = 'badge bg-danger';
+    });
+});
+
+function displayResults(result) {
+    if (!result || result.includes('No scan results') || result.includes('unreachable')) {
+        document.getElementById('noResults').style.display = 'block';
+        document.getElementById('resultsContainer').style.display = 'none';
+        showAlert('Could not detect OS: ' + result, 'warning');
+        return;
+    }
+    
+    document.getElementById('noResults').style.display = 'none';
+    document.getElementById('resultsContainer').style.display = 'block';
+    document.getElementById('osResult').textContent = result;
+}
+
+// Download PDF Report
+document.getElementById('downloadPdfBtn').addEventListener('click', function() {
+    if (!detectionResult) {
+        showAlert('No results to download', 'warning');
+        return;
+    }
+    
+    const reportData = {
+        ip: currentTarget,
+        os: detectionResult
+    };
+    
+    const title = `OS Detection Report - ${currentTarget}`;
+    const filename = `os_detection_${currentTarget.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.pdf`;
+    
+    downloadReport(reportData, title, filename);
+});
+
+// Pre-fill IP from URL parameters if available
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('ip')) {
+    document.getElementById('targetIp').value = urlParams.get('ip');
+}
+</script>
+{% endblock %} 

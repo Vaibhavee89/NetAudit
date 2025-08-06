@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Network Topology - NetAudit{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-sitemap"></i> Network Topology Mapping</h2>
+        <p class="text-muted">Visualize your network structure and device connections.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-cogs"></i> Mapping Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form id="topologyForm">
+                    <div class="mb-3">
+                        <label for="subnet" class="form-label">Target Subnet</label>
+                        <input type="text" class="form-control" id="subnet" value="192.168.1.0/24" required>
+                        <div class="form-text">Enter subnet in CIDR notation</div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="permission" required>
+                        <label class="form-check-label" for="permission">
+                            I have permission to scan this network
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-info w-100">
+                        <i class="fas fa-play"></i> Generate Topology Map
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6><i class="fas fa-map"></i> Visualization Features</h6>
+            </div>
+            <div class="card-body">
+                <small>
+                    <ul class="mb-0">
+                        <li>Interactive network graph</li>
+                        <li>Node positioning and dragging</li>
+                        <li>IP and MAC address display</li>
+                        <li>Zoom and pan capabilities</li>
+                        <li>Dark theme visualization</li>
+                    </ul>
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-project-diagram"></i> Network Topology</h5>
+                <div id="mapStats" class="badge bg-secondary">Ready</div>
+            </div>
+            <div class="card-body p-0">
+                <div id="topologyContainer" style="display: none; height: 550px;">
+                    <iframe id="topologyFrame" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+                
+                <div id="noTopology" class="text-center text-muted py-5">
+                    <i class="fas fa-sitemap fa-3x mb-3"></i>
+                    <h5>No topology map generated yet</h5>
+                    <p>Configure your subnet and click "Generate Topology Map" to visualize your network.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-info-circle"></i> Topology Mapping Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>Discovery Method</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success"></i> Host discovery scan</li>
+                            <li><i class="fas fa-check text-success"></i> MAC address collection</li>
+                            <li><i class="fas fa-check text-success"></i> Network graph generation</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Visualization</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success"></i> Interactive nodes</li>
+                            <li><i class="fas fa-check text-success"></i> Force-directed layout</li>
+                            <li><i class="fas fa-check text-success"></i> Responsive design</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Use Cases</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-search text-primary"></i> Network documentation</li>
+                            <li><i class="fas fa-shield-alt text-success"></i> Security assessment</li>
+                            <li><i class="fas fa-tools text-info"></i> Troubleshooting</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('topologyForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (!document.getElementById('permission').checked) {
+        showAlert('You must confirm you have permission before scanning.', 'danger');
+        return;
+    }
+    
+    const subnet = document.getElementById('subnet').value;
+    
+    showLoading();
+    document.getElementById('mapStats').textContent = 'Mapping...';
+    document.getElementById('mapStats').className = 'badge bg-warning';
+    
+    fetch('/api/network_topology', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            subnet: subnet
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        
+        if (data.success) {
+            displayTopology(data.data);
+            document.getElementById('mapStats').textContent = 'Topology generated';
+            document.getElementById('mapStats').className = 'badge bg-success';
+        } else {
+            showAlert('Topology mapping failed: ' + data.error, 'danger');
+            document.getElementById('mapStats').textContent = 'Mapping failed';
+            document.getElementById('mapStats').className = 'badge bg-danger';
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error:', error);
+        showAlert('Network error: ' + error.message, 'danger');
+        document.getElementById('mapStats').textContent = 'Error';
+        document.getElementById('mapStats').className = 'badge bg-danger';
+    });
+});
+
+function displayTopology(htmlContent) {
+    if (!htmlContent) {
+        document.getElementById('noTopology').style.display = 'block';
+        document.getElementById('topologyContainer').style.display = 'none';
+        return;
+    }
+    
+    document.getElementById('noTopology').style.display = 'none';
+    document.getElementById('topologyContainer').style.display = 'block';
+    
+    // Create a blob URL for the HTML content
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    
+    // Load the topology visualization in the iframe
+    document.getElementById('topologyFrame').src = url;
+}
+</script>
+{% endblock %} 

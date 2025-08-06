@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Intrusion Detection - NetAudit{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-exclamation-triangle"></i> Intrusion Detection</h2>
+        <p class="text-muted">Compare network scans against known legitimate hosts to detect potential intrusions.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-cogs"></i> Detection Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form id="intrusionDetectionForm">
+                    <div class="mb-3">
+                        <label for="subnet" class="form-label">Target Subnet</label>
+                        <input type="text" class="form-control" id="subnet" value="192.168.1.0/24" required>
+                        <div class="form-text">Enter subnet to scan for intrusions</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="genuineHosts" class="form-label">Known Legitimate Hosts</label>
+                        <textarea class="form-control" id="genuineHosts" rows="6" placeholder="192.168.1.1&#10;192.168.1.100&#10;192.168.1.200" required></textarea>
+                        <div class="form-text">Enter one IP address per line</div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="permission" required>
+                        <label class="form-check-label" for="permission">
+                            I have permission to scan this network
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-danger w-100">
+                        <i class="fas fa-play"></i> Check for Intrusions
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6><i class="fas fa-shield-alt"></i> Detection Method</h6>
+            </div>
+            <div class="card-body">
+                <small>
+                    <ol class="mb-0">
+                        <li>Scan the specified subnet for live hosts</li>
+                        <li>Compare discovered hosts with your legitimate host list</li>
+                        <li>Identify any hosts not in the legitimate list</li>
+                        <li>Report potential intrusions</li>
+                    </ol>
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-search"></i> Intrusion Detection Results</h5>
+                <div id="detectionStats" class="badge bg-secondary">Ready</div>
+            </div>
+            <div class="card-body">
+                <div id="resultsContainer" style="display: none;">
+                    <div id="intrusionAlert"></div>
+                    
+                    <div id="intrusionsList"></div>
+                    
+                    <div class="mt-3">
+                        <button class="btn btn-success" id="downloadPdfBtn">
+                            <i class="fas fa-file-pdf"></i> Download PDF Report
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="noResults" class="text-center text-muted py-5">
+                    <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                    <h5>No intrusion detection performed yet</h5>
+                    <p>Configure your detection parameters and click "Check for Intrusions" to begin.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-info-circle"></i> Important Security Notes</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-exclamation-triangle text-warning"></i> False Positives</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-info text-info"></i> New legitimate devices may appear as intrusions</li>
+                            <li><i class="fas fa-info text-info"></i> Dynamic IP assignments can cause false alarms</li>
+                            <li><i class="fas fa-info text-info"></i> Guest devices may be flagged incorrectly</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-shield-alt text-success"></i> Best Practices</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success"></i> Keep your legitimate hosts list updated</li>
+                            <li><i class="fas fa-check text-success"></i> Investigate all detected anomalies</li>
+                            <li><i class="fas fa-check text-success"></i> Run regular intrusion detection scans</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let detectionResults = [];
+let currentSubnet = '';
+
+document.getElementById('intrusionDetectionForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (!document.getElementById('permission').checked) {
+        showAlert('You must confirm you have permission before scanning.', 'danger');
+        return;
+    }
+    
+    const subnet = document.getElementById('subnet').value;
+    const genuineHostsText = document.getElementById('genuineHosts').value;
+    const genuineHosts = genuineHostsText.split('\n').filter(ip => ip.trim()).map(ip => ip.trim());
+    
+    currentSubnet = subnet;
+    
+    showLoading();
+    document.getElementById('detectionStats').textContent = 'Detecting...';
+    document.getElementById('detectionStats').className = 'badge bg-warning';
+    
+    fetch('/api/intrusion_detection', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            subnet: subnet,
+            genuine_hosts: genuineHosts
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        
+        if (data.success) {
+            detectionResults = data.data;
+            displayResults(data.data);
+            
+            if (data.data.length > 0) {
+                document.getElementById('detectionStats').textContent = `${data.data.length} potential intrusions detected!`;
+                document.getElementById('detectionStats').className = 'badge bg-danger';
+            } else {
+                document.getElementById('detectionStats').textContent = 'No intrusions detected';
+                document.getElementById('detectionStats').className = 'badge bg-success';
+            }
+        } else {
+            showAlert('Intrusion detection failed: ' + data.error, 'danger');
+            document.getElementById('detectionStats').textContent = 'Detection failed';
+            document.getElementById('detectionStats').className = 'badge bg-danger';
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error:', error);
+        showAlert('Network error: ' + error.message, 'danger');
+        document.getElementById('detectionStats').textContent = 'Error';
+        document.getElementById('detectionStats').className = 'badge bg-danger';
+    });
+});
+
+function displayResults(intrusions) {
+    document.getElementById('noResults').style.display = 'none';
+    document.getElementById('resultsContainer').style.display = 'block';
+    
+    const intrusionAlert = document.getElementById('intrusionAlert');
+    const intrusionsList = document.getElementById('intrusionsList');
+    
+    if (intrusions.length === 0) {
+        intrusionAlert.innerHTML = `
+            <div class="alert alert-success">
+                <h5><i class="fas fa-check-circle"></i> No Intrusions Detected</h5>
+                <p class="mb-0">All discovered hosts match your legitimate hosts list. Your network appears secure.</p>
+            </div>
+        `;
+        intrusionsList.innerHTML = '';
+    } else {
+        intrusionAlert.innerHTML = `
+            <div class="alert alert-danger">
+                <h5><i class="fas fa-exclamation-triangle"></i> Potential Intrusions Detected!</h5>
+                <p class="mb-0">Found ${intrusions.length} host(s) that are not in your legitimate hosts list. Please investigate immediately.</p>
+            </div>
+        `;
+        
+        intrusionsList.innerHTML = '<h6><i class="fas fa-list"></i> Suspicious Hosts:</h6>';
+        
+        const table = document.createElement('table');
+        table.className = 'table table-striped table-hover';
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>IP Address</th>
+                    <th>MAC Address</th>
+                    <th>Status</th>
+                    <th>Risk Level</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        `;
+        
+        const tbody = table.querySelector('tbody');
+        intrusions.forEach(host => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><strong class="text-danger">${host.ip}</strong></td>
+                <td><code>${host.mac || 'N/A'}</code></td>
+                <td><span class="badge bg-warning">${host.status || 'Unknown'}</span></td>
+                <td><span class="badge bg-danger">High</span></td>
+            `;
+            tbody.appendChild(row);
+        });
+        
+        intrusionsList.appendChild(table);
+    }
+}
+
+// Download PDF Report
+document.getElementById('downloadPdfBtn').addEventListener('click', function() {
+    if (!detectionResults && detectionResults !== []) {
+        showAlert('No results to download', 'warning');
+        return;
+    }
+    
+    const title = `Intrusion Detection Report - ${currentSubnet}`;
+    const filename = `intrusion_detection_${currentSubnet.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.pdf`;
+    
+    downloadReport(detectionResults, title, filename);
+});
+
+// Pre-populate with common legitimate hosts
+document.getElementById('genuineHosts').value = `192.168.1.1
+192.168.1.100`;
+</script>
+{% endblock %} 
