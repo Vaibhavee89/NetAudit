@@ -14,11 +14,44 @@ from pyvis.network import Network
 import streamlit.components.v1 as components
 from scapy.all import sniff
 from scapy.layers.inet import IP, TCP, UDP, ICMP
+import threading
+import time
 
 
 # ========================
 # Utility Functions
 # ========================
+
+def periodic_scans(subnet, ip, domain, interval=300):  # Default: every 5 min
+    while True:
+        try:
+            timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+            report = {"timestamp": timestamp}
+
+            # Network Scan
+            report["network_scan"] = scan_network(subnet)
+
+            # Port Scan
+            report["port_scan"] = port_scan(ip)
+
+            # OS Detection
+            report["os_detection"] = os_detect(ip)
+
+            # DNS Audit
+            report["dns_audit"] = dns_audit(domain)
+
+            # Traffic
+            packets, proto_stats = capture_packets(count=50)
+            report["traffic_stats"] = {"packets": packets, "protocols": proto_stats}
+
+            # Save Report
+            save_report(report)
+
+            print(f"[✓] Periodic scan completed at {timestamp}")
+        except Exception as e:
+            print(f"[X] Error in scheduled scan: {e}")
+
+        time.sleep(interval)  # Sleep before next run
 
 def scan_network(subnet):
     scanner = nmap.PortScanner()
@@ -286,167 +319,193 @@ def check_for_intrusion(scanned_hosts, genuine_hosts):
 st.set_page_config(page_title="NetAudit - Network Auditing Tool", layout="wide")
 st.title("🛡️ NetAudit – Network Auditing Tool (Backend Prototype)")
 
-st.sidebar.header("📝 Audit Scope & Objectives")
-scope = st.sidebar.text_input("Define Scope (e.g. 192.168.1.0/24, example.com)", "")
-objectives = st.sidebar.text_area("Define Objectives (e.g. Find open ports, check OS, audit DNS)", "")
+# Select mode
+mode = st.radio("Select Mode:", ["Scheduled Mode (Auto Scans)", "Manual Mode"])
 
-# Store scope/objectives for use in reports
-user_scope = scope if scope else "Not specified"
-user_objectives = objectives if objectives else "Not specified"
+if mode == "Scheduled Mode (Auto Scans)":
+    st.warning("Running periodic scans in the background every 5 minutes.")
+    subnet = st.text_input("Enter Subnet for Scheduled Scan", "192.168.1.0/24")
+    ip = st.text_input("Enter IP to scan ports and OS", "192.168.1.1")
+    domain = st.text_input("Enter Domain for DNS Audit", "example.com")
 
-st.sidebar.header("🔍 Audit Options")
-scan_type = st.sidebar.selectbox("Choose Action", [
- "Intrusion Detection",
-    "Network Scan",
-    "Port & Service Scan",
-    "OS Detection",
-    "DNS Audit",
-    "Traffic Stats",
-    "Vulnerability Scan",
-    "Firewall Test",
-    "Map Network Topology"  # <-- Add this
-])
+    if st.button("Start Scheduled Scans"):
+        threading.Thread(
+            target=periodic_scans,
+            args=(subnet, ip, domain),
+            daemon=True
+        ).start()
+        st.success("✅ Scheduled scanning started in background.")
+        st.stop()  # Stop Streamlit from running the rest of UI
 
-if scan_type == "Intrusion Detection":
-    st.header("Intrusion Detection")
-    subnet = st.text_input("Enter Subnet to Scan (e.g. 192.168.1.0/24)", "192.168.1.0/24")
-    genuine_hosts_input = st.text_area("Enter Genuine Hosts (one IP per line)", "192.168.1.1\n192.168.1.100")
-    genuine_hosts = [{"ip": ip.strip()} for ip in genuine_hosts_input.splitlines() if ip.strip()]
+if mode == "Manual Mode":
+    st.sidebar.header("📝 Audit Scope & Objectives")
+    scope = st.sidebar.text_input("Define Scope (e.g. 192.168.1.0/24, example.com)", "")
+    objectives = st.sidebar.text_area("Define Objectives (e.g. Find open ports, check OS, audit DNS)", "")
 
-    permission = st.checkbox("I have permission to scan this network and understand the risks.")
-    if st.button("Check for Intrusions") and permission:
-        st.info(f"Scanning subnet {subnet} to check for intrusions...")
-        scanned_hosts = scan_network(subnet)
-        intrusions = check_for_intrusion(scanned_hosts, genuine_hosts)
+    # Store scope/objectives for use in reports
+    user_scope = scope if scope else "Not specified"
+    user_objectives = objectives if objectives else "Not specified"
+
+    st.sidebar.header("🔍 Audit Options")
+    scan_type = st.sidebar.selectbox("Choose Action", [
+        "Select Here",
+         "Network Scan",
+         "Port & Service Scan",
+         "OS Detection",
+         "Intrusion Detection",
+         "DNS Audit",
+         "Traffic Stats",
+         "Vulnerability Scan",
+         "Firewall Test",
+         "Map Network Topology"
+    ])
+
+    if scan_type == "Intrusion Detection":
+        st.header("Intrusion Detection")
+        subnet = st.text_input("Enter Subnet to Scan (e.g. 192.168.1.0/24)", "192.168.1.0/24")
+        genuine_hosts_input = st.text_area("Enter Genuine Hosts (one IP per line)", "192.168.1.1\n192.168.1.100")
+        genuine_hosts = [{"ip": ip.strip()} for ip in genuine_hosts_input.splitlines() if ip.strip()]
+
+        permission = st.checkbox("I have permission to scan this network and understand the risks.")
+        if st.button("Check for Intrusions") and permission:
+            st.info(f"Scanning subnet {subnet} to check for intrusions...")
+            scanned_hosts = scan_network(subnet)
+            intrusions = check_for_intrusion(scanned_hosts, genuine_hosts)
         
-        if intrusions:
-            st.error("Potential Intrusions Detected:")
-            st.json(intrusions)
-        else:
-            st.success("No intrusions detected based on the genuine hosts list.")
+            if intrusions:
+                st.error("Potential Intrusions Detected:")
+                st.json(intrusions)
+            else:
+                st.success("No intrusions detected based on the genuine hosts list.")
 
-        pdf = generate_pdf(intrusions, title=f"Intrusion Detection Report ({subnet})")
-        st.download_button("📥 Download PDF Report", pdf, file_name="intrusion_detection_report.pdf", mime="application/pdf")
-
-elif scan_type == "Network Scan":
-    subnet = st.text_input("Enter Subnet (e.g. 192.168.1.0/24)", "192.168.1.0/24")
-    permission = st.checkbox("I have permission to scan this network and understand the risks.")
-    if st.button("Scan Network", key="scan_network") and permission:
-        result = scan_network(subnet)
-        st.success(f"Found {len(result)} live hosts.")
-        st.json(result)
-        save_report({
-            "scope": user_scope,
-            "objectives": user_objectives,
-            "hosts": result
-        })
-        pdf = generate_pdf(result, title=f"Network Scan Report ({subnet})")
-        st.download_button("📥 Download PDF Report", pdf, file_name="network_scan_report.pdf", mime="application/pdf")
-    elif st.button("Scan Network", key="scan_network_no_permission") and not permission:
-        st.error("You must confirm you have permission before scanning.")
-
-elif scan_type == "Port & Service Scan":
-    ip = st.text_input("Target IP", "192.168.1.1")
-    if st.button("Scan Ports"):
-        result = port_scan(ip)
-        st.json(result)
-        save_report({"ip": ip, "ports": result})
-
-        pdf = generate_pdf(result, title=f"Port & Service Scan Report ({ip})")
-        st.download_button("📥 Download PDF Report", pdf, file_name="port_service_report.pdf", mime="application/pdf")
-
-elif scan_type == "OS Detection":
-    ip = st.text_input("Target IP for OS detection", "192.168.1.1")
-    if st.button("Detect OS"):
-        os = os_detect(ip)
-        st.success(f"Detected OS: {os}")
-        save_report({"ip": ip, "os": os})
-
-        pdf = generate_pdf({"ip": ip, "os": os}, title=f"OS Detection Report ({ip})")
-        st.download_button("📥 Download PDF Report", pdf, file_name="os_detection_report.pdf", mime="application/pdf")
-
-elif scan_type == "DNS Audit":
-    domain = st.text_input("Enter Domain", "example.com")
-    if st.button("Run DNS Audit"):
-        result = dns_audit(domain)
-        st.json(result)
-        save_report({"domain": domain, "dns": result})
-
-        pdf = generate_pdf(result, title=f"DNS Audit Report ({domain})")
-        st.download_button("📥 Download PDF Report", pdf, file_name="dns_audit_report.pdf", mime="application/pdf")
-
-elif scan_type == "Traffic Stats":
-    st.header("📊 Real-Time Traffic Analysis")
-    packet_count = st.slider("Number of Packets to Capture", 10, 200, 50)
-    if st.button("Capture Packets"):
-        with st.spinner("Capturing packets..."):
-            captured, proto_stats = capture_packets(packet_count)
-            st.success(f"Captured {len(captured)} packets.")
-
-            # Show protocol distribution
-            st.subheader("Protocol Distribution")
-            st.json(proto_stats)
-
-            # Show captured packet summary
-            st.subheader("Packet Details")
-            st.dataframe(captured)
-
-            # Save as PDF
-            pdf = generate_pdf(captured, title="Live Packet Capture Report")
-            st.download_button("📥 Download PDF Report", pdf, file_name="packet_capture_report.pdf", mime="application/pdf")
+            pdf = generate_pdf(intrusions, title=f"Intrusion Detection Report ({subnet})")
+            st.download_button("📥 Download PDF Report", pdf, file_name="intrusion_detection_report.pdf", mime="application/pdf")
 
 
-elif scan_type == "Vulnerability Scan":
-    st.header("🔍 Vulnerability Scan")
-    target_ip = st.text_input("Enter Target IP", "192.168.1.5")
-    scan_mode = st.radio("Select Scan Mode", ["Auto Scan", "Custom Scan"])
-    permission = st.checkbox("I have permission to scan this target")
+    elif scan_type == "Network Scan":
+        subnet = st.text_input("Enter Subnet (e.g. 192.168.1.0/24)", "192.168.1.0/24")
+        permission = st.checkbox("I have permission to scan this network and understand the risks.")
+    
+        if st.button("Scan Network"):
+            if permission:
+                result = scan_network(subnet)
+                st.success(f"Found {len(result)} live hosts.")
+                st.json(result)
 
-    if scan_mode == "Auto Scan" and st.button("Run Auto Vulnerability Scan") and permission:
-        result = run_auto_vuln_scan(target_ip)
-        st.json(result)
+                save_report({
+                    "scope": user_scope,
+                    "objectives": user_objectives,
+                    "hosts": result
+                })
 
-        # Optionally allow download
-        pdf = generate_pdf(result, title=f"Auto Vulnerability Report - {target_ip}")
-        st.download_button("📥 Download PDF Report", pdf, file_name="auto_vulnerability_report.pdf", mime="application/pdf")
+                pdf = generate_pdf(result, title=f"Network Scan Report ({subnet})")
+                st.download_button("📥 Download PDF Report", pdf, file_name="network_scan_report.pdf", mime="application/pdf")
+            else:
+                st.error("⚠️ You must confirm you have permission before scanning.")
 
-    elif scan_mode == "Custom Scan":
-        keyword = st.text_input("Enter Vulnerability Keyword")
-        if st.button("Run Custom Vulnerability Scan") and permission:
-            result = run_custom_vuln_scan(target_ip, keyword)
+
+    elif scan_type == "Port & Service Scan":
+        ip = st.text_input("Target IP", "192.168.1.1")
+        if st.button("Scan Ports"):
+            result = port_scan(ip)
+            st.json(result)
+            save_report({"ip": ip, "ports": result})
+
+            pdf = generate_pdf(result, title=f"Port & Service Scan Report ({ip})")
+            st.download_button("📥 Download PDF Report", pdf, file_name="port_service_report.pdf", mime="application/pdf")
+
+    elif scan_type == "OS Detection":
+        ip = st.text_input("Target IP for OS detection", "192.168.1.1")
+        if st.button("Detect OS"):
+            os = os_detect(ip)
+            st.success(f"Detected OS: {os}")
+            save_report({"ip": ip, "os": os})
+
+            pdf = generate_pdf({"ip": ip, "os": os}, title=f"OS Detection Report ({ip})")
+            st.download_button("📥 Download PDF Report", pdf, file_name="os_detection_report.pdf", mime="application/pdf")
+
+    elif scan_type == "DNS Audit":
+        domain = st.text_input("Enter Domain", "example.com")
+        if st.button("Run DNS Audit"):
+            result = dns_audit(domain)
+            st.json(result)
+            save_report({"domain": domain, "dns": result})
+
+            pdf = generate_pdf(result, title=f"DNS Audit Report ({domain})")
+            st.download_button("📥 Download PDF Report", pdf, file_name="dns_audit_report.pdf", mime="application/pdf")
+
+    elif scan_type == "Traffic Stats":
+        st.header("📊 Real-Time Traffic Analysis")
+        packet_count = st.slider("Number of Packets to Capture", 10, 200, 50)
+        if st.button("Capture Packets"):
+            with st.spinner("Capturing packets..."):
+                captured, proto_stats = capture_packets(packet_count)
+                st.success(f"Captured {len(captured)} packets.")
+
+                # Show protocol distribution
+                st.subheader("Protocol Distribution")
+                st.json(proto_stats)
+
+                # Show captured packet summary
+                st.subheader("Packet Details")
+                st.dataframe(captured)  
+
+                # Save as PDF
+                pdf = generate_pdf(captured, title="Live Packet Capture Report")
+                st.download_button("📥 Download PDF Report", pdf, file_name="packet_capture_report.pdf", mime="application/pdf")
+
+
+    elif scan_type == "Vulnerability Scan":
+        st.header("🔍 Vulnerability Scan")
+        target_ip = st.text_input("Enter Target IP", "192.168.1.5")
+        scan_mode = st.radio("Select Scan Mode", ["Auto Scan", "Custom Scan"])
+        permission = st.checkbox("I have permission to scan this target")
+
+        if scan_mode == "Auto Scan" and st.button("Run Auto Vulnerability Scan") and permission:
+            result = run_auto_vuln_scan(target_ip)
             st.json(result)
 
-            pdf = generate_pdf(result, title=f"Custom Vulnerability Report - {target_ip}")
-            st.download_button("📥 Download PDF Report", pdf, file_name="custom_vulnerability_report.pdf", mime="application/pdf")
+            # Optionally allow download
+            pdf = generate_pdf(result, title=f"Auto Vulnerability Report - {target_ip}")
+            st.download_button("📥 Download PDF Report", pdf, file_name="auto_vulnerability_report.pdf", mime="application/pdf")
+
+        elif scan_mode == "Custom Scan":
+            keyword = st.text_input("Enter Vulnerability Keyword")
+            if st.button("Run Custom Vulnerability Scan") and permission:
+                result = run_custom_vuln_scan(target_ip, keyword)
+                st.json(result)
+
+                pdf = generate_pdf(result, title=f"Custom Vulnerability Report - {target_ip}")
+                st.download_button("📥 Download PDF Report", pdf, file_name="custom_vulnerability_report.pdf", mime="application/pdf")
 
 
-elif scan_type == "Firewall Test":
-    if st.button("Test All Firewall Rules"):
-        result = firewall_test_all_rules()
-        st.json(result)
-        save_report({"firewall_rules": result})
-        pdf = generate_pdf(result, title="Firewall Rules Test Report")
-        st.download_button("📥 Download PDF Report", pdf, file_name="firewall_rules_report.pdf", mime="application/pdf")
+    elif scan_type == "Firewall Test":
+        if st.button("Test All Firewall Rules"):
+            result = firewall_test_all_rules()
+            st.json(result)
+            save_report({"firewall_rules": result})
+            pdf = generate_pdf(result, title="Firewall Rules Test Report")
+            st.download_button("📥 Download PDF Report", pdf, file_name="firewall_rules_report.pdf", mime="application/pdf")
 
 
-elif scan_type == "Map Network Topology":
-    subnet = st.text_input("Enter Subnet for Topology Mapping", "192.168.1.0/24")
-    permission = st.checkbox("I have permission to scan this network and understand the risks.")
-    if st.button("Map Topology", key="map_topology") and permission:
-        st.info("Scanning and mapping network topology...")
-        html = map_network_topology(subnet)
-        components.html(html, height=550, scrolling=True)
-    elif st.button("Map Topology", key="map_topology_no_permission") and not permission:
-        st.error("You must confirm you have permission before mapping topology.")
+    elif scan_type == "Map Network Topology":
+        subnet = st.text_input("Enter Subnet for Topology Mapping", "192.168.1.0/24")
+        permission = st.checkbox("I have permission to scan this network and understand the risks.")
+        if st.button("Map Topology", key="map_topology") and permission:
+            st.info("Scanning and mapping network topology...")
+            html = map_network_topology(subnet)
+            components.html(html, height=550, scrolling=True)
+        elif st.button("Map Topology", key="map_topology_no_permission") and not permission:
+            st.error("You must confirm you have permission before mapping topology.")
 
-st.sidebar.markdown("---")
-st.sidebar.write("📄 Reports are saved locally as JSON and PDF.")
-download_report_ui()
+    st.sidebar.markdown("---")
+    st.sidebar.write("📄 Reports are saved locally as JSON and PDF.")
+    download_report_ui()
 
-# Print Nmap version
-st.sidebar.header("🔧 Nmap Version")
-nmap_version = subprocess.getoutput("nmap --version")
-st.sidebar.text_area("Nmap Version Info", nmap_version, height=300)
+    # Print Nmap version
+    st.sidebar.header("🔧 Nmap Version")
+    nmap_version = subprocess.getoutput("nmap --version")
+    st.sidebar.text_area("Nmap Version Info", nmap_version, height=300)
 
-st.sidebar.markdown("---")
-st.sidebar.write("📄 Reports are saved locally as JSON and downloadable as PDF.")
+    st.sidebar.markdown("---")
+    st.sidebar.write("📄 Reports are saved locally as JSON and downloadable as PDF.")
