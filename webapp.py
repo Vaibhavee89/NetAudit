@@ -38,9 +38,13 @@ def scan_network(subnet):
         })
     return live_hosts
 
-def port_scan(ip):
+def port_scan(ip, ports=None):
+    start_time = time.time()
     scanner = nmap.PortScanner()
-    scanner.scan(hosts=ip, arguments='-sV -p 1-65535 -T4')
+    arguments = '-sV -T4'
+    if ports:
+        arguments += f' -p {ports}'
+    scanner.scan(hosts=ip, arguments=arguments)
     if ip not in scanner.all_hosts():
         return {"error": f"No scan results for {ip}. Host may be unreachable."}
     ports = []
@@ -53,7 +57,9 @@ def port_scan(ip):
                 'product': scanner[ip][proto][port].get('product', ''),
                 'version': scanner[ip][proto][port].get('version', '')
             })
-    return ports
+    end_time = time.time()
+    scan_duration = end_time - start_time
+    return {"ports": ports, "duration": scan_duration}
 
 def os_detect(ip):
     scanner = nmap.PortScanner()
@@ -341,9 +347,9 @@ def api_scan_network():
 def api_port_scan():
     data = request.get_json()
     ip = data.get('ip')
-    
+    ports = data.get('ports')
     try:
-        result = port_scan(ip)
+        result = port_scan(ip, ports)
         return jsonify({'success': True, 'data': result})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
