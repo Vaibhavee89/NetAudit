@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}NetAudit - Network Auditing Tool{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="text-center mb-5">
+            <h1 class="display-4 mb-4">
+                <i class="fas fa-shield-alt text-primary"></i> NetAudit
+            </h1>
+            <p class="lead">Professional Network Auditing and Security Assessment Tool</p>
+            <p class="text-muted">Comprehensive network scanning, vulnerability assessment, and security analysis</p>
+        </div>
+    </div>
+</div>
+
+<!-- Warning Banner -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-warning" role="alert">
+            <h5><i class="fas fa-exclamation-triangle"></i> Important Legal Notice</h5>
+            <p class="mb-0">Only use this tool on networks you own or have explicit permission to audit. Unauthorized network scanning may violate local laws and regulations.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Feature Cards -->
+<div class="row g-4">
+    <!-- Network Discovery -->
+    <div class="col-lg-4 col-md-6">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-network-wired fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Network Discovery</h5>
+                <p class="card-text">Discover live hosts, map network topology, and identify connected devices on your network.</p>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('network_scan_page') }}" class="btn btn-primary">Network Scan</a>
+                    <a href="{{ url_for('network_topology_page') }}" class="btn btn-outline-primary">Topology Map</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Port & Service Analysis -->
+    <div class="col-lg-4 col-md-6">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-door-open fa-3x text-success mb-3"></i>
+                <h5 class="card-title">Port & Service Analysis</h5>
+                <p class="card-text">Scan for open ports, identify running services, and detect operating systems.</p>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('port_scan_page') }}" class="btn btn-success">Port Scan</a>
+                    <a href="{{ url_for('os_detection_page') }}" class="btn btn-outline-success">OS Detection</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Assessment -->
+    <div class="col-lg-4 col-md-6">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-bug fa-3x text-danger mb-3"></i>
+                <h5 class="card-title">Security Assessment</h5>
+                <p class="card-text">Perform vulnerability scans, intrusion detection, and security analysis.</p>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('vulnerability_scan_page') }}" class="btn btn-danger">Vulnerability Scan</a>
+                    <a href="{{ url_for('intrusion_detection_page') }}" class="btn btn-outline-danger">Intrusion Detection</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DNS & Domain Analysis -->
+    <div class="col-lg-4 col-md-6">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-globe fa-3x text-info mb-3"></i>
+                <h5 class="card-title">DNS & Domain Analysis</h5>
+                <p class="card-text">Audit DNS configurations, resolve domain names, and analyze DNS records.</p>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('dns_audit_page') }}" class="btn btn-info">DNS Audit</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Traffic Analysis -->
+    <div class="col-lg-4 col-md-6">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line fa-3x text-warning mb-3"></i>
+                <h5 class="card-title">Traffic Analysis</h5>
+                <p class="card-text">Capture and analyze network traffic, monitor protocols, and detect anomalies.</p>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('traffic_stats_page') }}" class="btn btn-warning">Traffic Stats</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firewall Testing -->
+    <div class="col-lg-4 col-md-6">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-fire fa-3x text-secondary mb-3"></i>
+                <h5 class="card-title">Firewall Testing</h5>
+                <p class="card-text">Test firewall rules, check port accessibility, and validate security configurations.</p>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('firewall_test_page') }}" class="btn btn-secondary">Firewall Test</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Start Guide -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-rocket"></i> Quick Start Guide</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-step-forward"></i> Getting Started</h6>
+                        <ol>
+                            <li>Start with a <strong>Network Scan</strong> to discover live hosts</li>
+                            <li>Perform <strong>Port Scans</strong> on discovered hosts</li>
+                            <li>Use <strong>OS Detection</strong> to identify system types</li>
+                            <li>Run <strong>Vulnerability Scans</strong> for security assessment</li>
+                            <li>Download detailed reports for documentation</li>
+                        </ol>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-lightbulb"></i> Best Practices</h6>
+                        <ul>
+                            <li>Always obtain proper authorization before scanning</li>
+                            <li>Start with less intrusive scans (ping sweeps)</li>
+                            <li>Use appropriate scan timing to avoid detection</li>
+                            <li>Document all findings in generated reports</li>
+                            <li>Follow responsible disclosure for vulnerabilities</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Requirements -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cogs"></i> System Requirements</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-server"></i> Required Tools</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success"></i> Nmap (Network Scanner)</li>
+                            <li><i class="fas fa-check text-success"></i> Python 3.7+</li>
+                            <li><i class="fas fa-check text-success"></i> Administrative Privileges</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-python"></i> Python Libraries</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success"></i> Flask</li>
+                            <li><i class="fas fa-check text-success"></i> python-nmap</li>
+                            <li><i class="fas fa-check text-success"></i> scapy</li>
+                            <li><i class="fas fa-check text-success"></i> dnspython</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-shield-alt"></i> Security Notes</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-info text-info"></i> Run as administrator/root</li>
+                            <li><i class="fas fa-info text-info"></i> Firewall may block scans</li>
+                            <li><i class="fas fa-info text-info"></i> Some features require elevated privileges</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
