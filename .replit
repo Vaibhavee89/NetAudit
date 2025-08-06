@@ -1,0 +1,12 @@
+modules = ["web", "python-3.12", "nodejs-20", "bash", "nix"]
+run = "streamlit run app.py"
+
+[nix]
+channel = "stable-25_05"
+
+[deployment]
+run = ["sh", "-c", "streamlit run app.py"]
+
+[[ports]]
+localPort = 5000
+externalPort = 80
