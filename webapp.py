@@ -4,7 +4,7 @@ import psutil
 import dns.resolver
 import socket
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 import io
 from fpdf import FPDF 
@@ -17,6 +17,7 @@ from scapy.all import sniff
 from scapy.layers.inet import IP, TCP, UDP, ICMP
 import threading
 import time
+from dateutil import parser
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this'  # Change this in production
@@ -366,6 +367,10 @@ def network_topology_page():
 def intrusion_detection_page():
     return render_template('intrusion_detection.html')
 
+@app.route('/scheduler')
+def scheduler_page():
+    return render_template('scheduler.html')
+
 # API Routes
 @app.route('/api/scan_network', methods=['POST'])
 def api_scan_network():
@@ -492,6 +497,85 @@ def api_download_report():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+# Scheduler API Routes
+@app.route('/api/schedule_task', methods=['POST'])
+def api_schedule_task():
+    data = request.get_json()
+    task_type = data.get('task_type')
+    schedule_time = data.get('schedule_time')
+    user_email = data.get('user_email', '')
+    
+    try:
+        # Import scheduler here to avoid circular imports
+        from scheduler import schedule_task
+        
+        # Parse schedule time
+        schedule_datetime = parser.parse(schedule_time)
+        
+        # Get task-specific parameters
+        task_params = {}
+        if task_type == 'network_scan':
+            task_params['subnet'] = data.get('subnet', '192.168.1.0/24')
+        elif task_type == 'port_scan':
+            task_params['ip'] = data.get('ip')
+            task_params['ports'] = data.get('ports')
+        elif task_type == 'os_detection':
+            task_params['ip'] = data.get('ip')
+        elif task_type == 'dns_audit':
+            task_params['domain'] = data.get('domain')
+        elif task_type == 'packet_capture':
+            task_params['count'] = data.get('count', 50)
+        elif task_type == 'vulnerability_scan':
+            task_params['ip'] = data.get('ip')
+            task_params['scan_mode'] = data.get('scan_mode', 'auto')
+            task_params['keyword'] = data.get('keyword', '')
+        elif task_type == 'network_topology':
+            task_params['subnet'] = data.get('subnet', '192.168.1.0/24')
+        elif task_type == 'intrusion_detection':
+            task_params['subnet'] = data.get('subnet', '192.168.1.0/24')
+            task_params['genuine_hosts'] = data.get('genuine_hosts', [])
+        
+        job_id = schedule_task(task_type, schedule_datetime, **task_params)
+        
+        if job_id:
+            return jsonify({'success': True, 'job_id': job_id, 'message': 'Task scheduled successfully'})
+        else:
+            return jsonify({'success': False, 'error': 'Failed to schedule task'})
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/get_scheduled_jobs', methods=['GET'])
+def api_get_scheduled_jobs():
+    try:
+        from scheduler import get_scheduled_jobs
+        jobs = get_scheduled_jobs()
+        return jsonify({'success': True, 'jobs': jobs})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/remove_scheduled_job', methods=['POST'])
+def api_remove_scheduled_job():
+    data = request.get_json()
+    job_id = data.get('job_id')
+    
+    try:
+        from scheduler import remove_scheduled_job
+        success = remove_scheduled_job(job_id)
+        return jsonify({'success': success, 'message': 'Job removed successfully' if success else 'Failed to remove job'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/get_job_results', methods=['GET'])
+def api_get_job_results():
+    try:
+        from scheduler import get_job_results
+        job_id = request.args.get('job_id')
+        results = get_job_results(job_id)
+        return jsonify({'success': True, 'results': results})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/reports')
 def list_reports():
     try:
@@ -523,10 +607,18 @@ if __name__ == '__main__':
     os.makedirs('reports', exist_ok=True)
     os.makedirs('static', exist_ok=True)
     os.makedirs('templates', exist_ok=True)
+    os.makedirs('scheduled_results', exist_ok=True)
 
     # Create empty vuln_db.json if it doesn't exist
     if not os.path.exists('vuln_db.json'):
         with open('vuln_db.json', 'w') as f:
             json.dump([], f)
+
+    # Initialize scheduler
+    try:
+        from scheduler import init_scheduler
+        init_scheduler()
+    except Exception as e:
+        print(f"Failed to initialize scheduler: {e}")
 
     app.run(debug=True, host='0.0.0.0', port=5000)

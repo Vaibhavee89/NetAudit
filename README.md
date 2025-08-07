@@ -34,6 +34,12 @@ A comprehensive network auditing and security assessment tool built with Flask. 
 - **JSON Export**: Machine-readable data export
 - **Report Management**: Centralized report storage and access
 
+### Task Scheduling
+- **Automated Scheduling**: Schedule audit tasks to run at specific times
+- **Background Execution**: Tasks run automatically in the background
+- **Result Storage**: All scheduled task results are saved and accessible
+- **Email Notifications**: Optional email tracking for scheduled tasks
+
 ## 📋 Prerequisites
 
 ### System Requirements
@@ -61,7 +67,7 @@ cd Streamlit-NetworkAuditing
 ### Step 2: Install Dependencies
 ```bash
 # Install required Python packages
-pip install -r requirements_webapp.txt
+pip install -r requirements.txt
 ```
 
 ### Step 3: Install Nmap
@@ -80,7 +86,16 @@ sudo apt-get install nmap
 brew install nmap
 ```
 
-### Step 4: Verify Installation
+### Step 4: Set Up Database (Required for Task Scheduling)
+```bash
+# Set up the SQLite database for task scheduling
+python setup_database.py
+
+# (Optional) Test the database setup
+python test_database.py
+```
+
+### Step 5: Verify Installation
 ```bash
 # Check Python version
 python --version
@@ -175,11 +190,33 @@ Once running, access the web application at:
 - **Output**: List of potential intrusions
 - **Use Cases**: Security monitoring, intrusion detection
 
+#### Task Scheduling
+- **Purpose**: Automate audit tasks to run at specified times
+- **Input**: Task type, schedule time, and task-specific parameters
+- **Output**: Scheduled execution and result storage
+- **Use Cases**: Regular security audits, automated monitoring, compliance reporting
+
 ### Report Generation
 - All scans generate downloadable PDF reports
 - Reports include timestamps, scan parameters, and detailed results
 - Access all reports via the Reports page
 - JSON export available for machine processing
+
+### Task Scheduling
+- **Schedule Tasks**: Use the Scheduler page to set up automated audit tasks
+- **Choose Task Type**: Select from all available scan types
+- **Set Schedule Time**: Pick when the task should run
+- **Configure Parameters**: Set task-specific parameters (IP addresses, domains, etc.)
+- **Monitor Results**: View scheduled tasks and their results
+- **Download Reports**: Access PDF reports for completed scheduled tasks
+- **Manage Jobs**: Remove or modify scheduled tasks as needed
+
+#### Scheduling Best Practices
+- Schedule intensive scans during off-peak hours
+- Use email notifications for important tasks
+- Regularly review and clean up old scheduled tasks
+- Test scheduled tasks with small parameters first
+- Monitor system resources during scheduled executions
 
 ## ⚖️ Legal and Ethical Considerations
 
@@ -211,6 +248,34 @@ Once running, access the web application at:
 - Add additional vulnerability databases
 - Extend functionality with new scan types
 
+## 🗄️ Database Management
+
+### Task Scheduler Database
+The application uses a SQLite database to store scheduled tasks. The database file is automatically created when you run the setup script.
+
+#### Database Files
+- `scheduled_jobs.db` - Main database for scheduled tasks
+- `scheduled_results/` - Directory containing task results and reports
+
+#### Database Setup
+```bash
+# Initial setup (run once)
+python setup_database.py
+
+# Test database functionality
+python test_database.py
+```
+
+#### Database Maintenance
+- The database is automatically managed by APScheduler
+- No manual maintenance required
+- Database file can be safely backed up or moved
+- To reset the database, delete `scheduled_jobs.db` and run `setup_database.py`
+
+#### Database Location
+- Database file: `./scheduled_jobs.db` (relative to application directory)
+- Results directory: `./scheduled_results/` (created automatically)
+
 ## 🐛 Troubleshooting
 
 ### Common Issues
@@ -231,6 +296,17 @@ Once running, access the web application at:
 **Problem**: Port scans are very slow
 **Solution**: Reduce scan range or adjust timing parameters
 
+#### Scheduler Database Errors
+**Problem**: "Database not found" or scheduler initialization fails
+**Solution**: Run `python setup_database.py` to create the database
+
+#### Task Scheduling Not Working
+**Problem**: Cannot schedule tasks or scheduler fails to start
+**Solution**: 
+1. Run `python setup_database.py` to ensure database exists
+2. Run `python test_database.py` to verify setup
+3. Check that all dependencies are installed: `pip install -r requirements.txt`
+
 ### Performance Optimization
 - Use smaller subnet ranges for faster network scans
 - Adjust Nmap timing templates for better performance
@@ -242,7 +318,8 @@ Once running, access the web application at:
 ```
 Streamlit-NetworkAuditing/
 ├── webapp.py                 # Main Flask application
-├── requirements_webapp.txt   # Python dependencies
+├── scheduler.py              # Task scheduling system
+├── requirements.txt          # Python dependencies
 ├── README_webapp.md          # This file
 ├── templates/                # HTML templates
 │   ├── base.html            # Base template with navigation
@@ -256,9 +333,11 @@ Streamlit-NetworkAuditing/
 │   ├── network_topology.html # Network topology page
 │   ├── intrusion_detection.html # Intrusion detection page
 │   ├── os_detection.html    # OS detection page
+│   ├── scheduler.html       # Task scheduling page
 │   └── reports.html         # Reports listing page
 ├── static/                  # Static files (created automatically)
 ├── reports/                 # Generated reports (created automatically)
+├── scheduled_results/       # Scheduled task results (created automatically)
 ├── vuln_db.json            # Vulnerability database
 └── lib/                    # JavaScript libraries (from original)
 ```

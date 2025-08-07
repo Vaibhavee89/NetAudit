@@ -3,3 +3,7 @@ psutil
 dnspython
 fpdf
 streamlit
+Flask-SQLAlchemy
+APScheduler
+python-dateutil
+SQLAlchemy

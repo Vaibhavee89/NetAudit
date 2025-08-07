@@ -1,0 +1,509 @@
+{% extends "base.html" %}
+
+{% block title %}Task Scheduler - NetAudit{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-clock"></i> Task Scheduler</h2>
+        <p class="text-muted">Schedule network audit tasks to run automatically at specified times.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-plus"></i> Schedule New Task</h5>
+            </div>
+            <div class="card-body">
+                <form id="scheduleForm">
+                    <div class="mb-3">
+                        <label for="taskType" class="form-label">Task Type</label>
+                        <select class="form-select" id="taskType" required>
+                            <option value="">Select a task type</option>
+                            <option value="network_scan">Network Scan</option>
+                            <option value="port_scan">Port Scan</option>
+                            <option value="os_detection">OS Detection</option>
+                            <option value="dns_audit">DNS Audit</option>
+                            <option value="packet_capture">Packet Capture</option>
+                            <option value="vulnerability_scan">Vulnerability Scan</option>
+                            <option value="firewall_test">Firewall Test</option>
+                            <option value="network_topology">Network Topology</option>
+                            <option value="intrusion_detection">Intrusion Detection</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="scheduleTime" class="form-label">Schedule Time</label>
+                        <input type="datetime-local" class="form-control" id="scheduleTime" required>
+                        <div class="form-text">Select when to run this task</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="userEmail" class="form-label">Email (Optional)</label>
+                        <input type="email" class="form-control" id="userEmail" placeholder="your@email.com">
+                        <div class="form-text">For notifications and result tracking</div>
+                    </div>
+
+                    <!-- Task-specific parameters -->
+                    <div id="taskParams" style="display: none;">
+                        <!-- Network Scan Parameters -->
+                        <div id="networkScanParams" class="task-params" style="display: none;">
+                            <div class="mb-3">
+                                <label for="subnet" class="form-label">Subnet</label>
+                                <input type="text" class="form-control" id="subnet" value="192.168.1.0/24">
+                            </div>
+                        </div>
+
+                        <!-- Port Scan Parameters -->
+                        <div id="portScanParams" class="task-params" style="display: none;">
+                            <div class="mb-3">
+                                <label for="targetIp" class="form-label">Target IP</label>
+                                <input type="text" class="form-control" id="targetIp" placeholder="192.168.1.1">
+                            </div>
+                            <div class="mb-3">
+                                <label for="ports" class="form-label">Ports (Optional)</label>
+                                <input type="text" class="form-control" id="ports" placeholder="80,443,22,21">
+                                <div class="form-text">Leave empty for all ports</div>
+                            </div>
+                        </div>
+
+                        <!-- OS Detection Parameters -->
+                        <div id="osDetectionParams" class="task-params" style="display: none;">
+                            <div class="mb-3">
+                                <label for="osTargetIp" class="form-label">Target IP</label>
+                                <input type="text" class="form-control" id="osTargetIp" placeholder="192.168.1.1">
+                            </div>
+                        </div>
+
+                        <!-- DNS Audit Parameters -->
+                        <div id="dnsAuditParams" class="task-params" style="display: none;">
+                            <div class="mb-3">
+                                <label for="domain" class="form-label">Domain</label>
+                                <input type="text" class="form-control" id="domain" placeholder="example.com">
+                            </div>
+                        </div>
+
+                        <!-- Packet Capture Parameters -->
+                        <div id="packetCaptureParams" class="task-params" style="display: none;">
+                            <div class="mb-3">
+                                <label for="packetCount" class="form-label">Packet Count</label>
+                                <input type="number" class="form-control" id="packetCount" value="50" min="1" max="1000">
+                            </div>
+                        </div>
+
+                        <!-- Vulnerability Scan Parameters -->
+                        <div id="vulnerabilityScanParams" class="task-params" style="display: none;">
+                            <div class="mb-3">
+                                <label for="vulnTargetIp" class="form-label">Target IP</label>
+                                <input type="text" class="form-control" id="vulnTargetIp" placeholder="192.168.1.1">
+                            </div>
+                            <div class="mb-3">
+                                <label for="scanMode" class="form-label">Scan Mode</label>
+                                <select class="form-select" id="scanMode">
+                                    <option value="auto">Auto Scan</option>
+                                    <option value="custom">Custom Scan</option>
+                                </select>
+                            </div>
+                            <div class="mb-3" id="keywordField" style="display: none;">
+                                <label for="keyword" class="form-label">Vulnerability Keyword</label>
+                                <input type="text" class="form-control" id="keyword" placeholder="ssh, ftp, etc.">
+                            </div>
+                        </div>
+
+                        <!-- Network Topology Parameters -->
+                        <div id="networkTopologyParams" class="task-params" style="display: none;">
+                            <div class="mb-3">
+                                <label for="topologySubnet" class="form-label">Subnet</label>
+                                <input type="text" class="form-control" id="topologySubnet" value="192.168.1.0/24">
+                            </div>
+                        </div>
+
+                        <!-- Intrusion Detection Parameters -->
+                        <div id="intrusionDetectionParams" class="task-params" style="display: none;">
+                            <div class="mb-3">
+                                <label for="intrusionSubnet" class="form-label">Subnet</label>
+                                <input type="text" class="form-control" id="intrusionSubnet" value="192.168.1.0/24">
+                            </div>
+                            <div class="mb-3">
+                                <label for="genuineHosts" class="form-label">Genuine Hosts (One per line)</label>
+                                <textarea class="form-control" id="genuineHosts" rows="3" placeholder="192.168.1.1&#10;192.168.1.2&#10;192.168.1.3"></textarea>
+                                <div class="form-text">List of known legitimate hosts</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-clock"></i> Schedule Task
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list"></i> Scheduled Tasks</h5>
+                <button class="btn btn-sm btn-outline-secondary" onclick="refreshScheduledJobs()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="scheduledJobsContainer">
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-clock fa-3x mb-3"></i>
+                        <h5>No scheduled tasks</h5>
+                        <p>Schedule your first task to get started.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-file-alt"></i> Task Results</h5>
+                <button class="btn btn-sm btn-outline-secondary" onclick="refreshJobResults()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="jobResultsContainer">
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-file-alt fa-3x mb-3"></i>
+                        <h5>No task results yet</h5>
+                        <p>Results will appear here after scheduled tasks complete.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Show/hide task-specific parameters based on selected task type
+document.getElementById('taskType').addEventListener('change', function() {
+    const taskType = this.value;
+    const taskParams = document.getElementById('taskParams');
+    const allParamDivs = document.querySelectorAll('.task-params');
+    
+    // Hide all parameter sections
+    allParamDivs.forEach(div => div.style.display = 'none');
+    
+    if (taskType) {
+        taskParams.style.display = 'block';
+        const specificParams = document.getElementById(taskType + 'Params');
+        if (specificParams) {
+            specificParams.style.display = 'block';
+        }
+    } else {
+        taskParams.style.display = 'none';
+    }
+});
+
+// Show/hide keyword field for custom vulnerability scan
+document.getElementById('scanMode').addEventListener('change', function() {
+    const keywordField = document.getElementById('keywordField');
+    if (this.value === 'custom') {
+        keywordField.style.display = 'block';
+    } else {
+        keywordField.style.display = 'none';
+    }
+});
+
+// Schedule task form submission
+document.getElementById('scheduleForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const taskType = document.getElementById('taskType').value;
+    const scheduleTime = document.getElementById('scheduleTime').value;
+    const userEmail = document.getElementById('userEmail').value;
+    
+    if (!taskType || !scheduleTime) {
+        showAlert('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    // Build task parameters based on task type
+    const taskData = {
+        task_type: taskType,
+        schedule_time: scheduleTime,
+        user_email: userEmail
+    };
+    
+    // Add task-specific parameters
+    switch (taskType) {
+        case 'network_scan':
+            taskData.subnet = document.getElementById('subnet').value;
+            break;
+        case 'port_scan':
+            taskData.ip = document.getElementById('targetIp').value;
+            taskData.ports = document.getElementById('ports').value;
+            break;
+        case 'os_detection':
+            taskData.ip = document.getElementById('osTargetIp').value;
+            break;
+        case 'dns_audit':
+            taskData.domain = document.getElementById('domain').value;
+            break;
+        case 'packet_capture':
+            taskData.count = parseInt(document.getElementById('packetCount').value);
+            break;
+        case 'vulnerability_scan':
+            taskData.ip = document.getElementById('vulnTargetIp').value;
+            taskData.scan_mode = document.getElementById('scanMode').value;
+            if (taskData.scan_mode === 'custom') {
+                taskData.keyword = document.getElementById('keyword').value;
+            }
+            break;
+        case 'network_topology':
+            taskData.subnet = document.getElementById('topologySubnet').value;
+            break;
+        case 'intrusion_detection':
+            taskData.subnet = document.getElementById('intrusionSubnet').value;
+            const genuineHostsText = document.getElementById('genuineHosts').value;
+            taskData.genuine_hosts = genuineHostsText.split('\n').filter(ip => ip.trim());
+            break;
+    }
+    
+    // Validate required parameters
+    if (!validateTaskParameters(taskType, taskData)) {
+        return;
+    }
+    
+    showLoading();
+    
+    fetch('/api/schedule_task', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(taskData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        
+        if (data.success) {
+            showAlert('Task scheduled successfully!', 'success');
+            document.getElementById('scheduleForm').reset();
+            document.getElementById('taskParams').style.display = 'none';
+            refreshScheduledJobs();
+        } else {
+            showAlert('Failed to schedule task: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error:', error);
+        showAlert('Network error: ' + error.message, 'danger');
+    });
+});
+
+function validateTaskParameters(taskType, taskData) {
+    switch (taskType) {
+        case 'port_scan':
+            if (!taskData.ip) {
+                showAlert('Please enter a target IP address', 'warning');
+                return false;
+            }
+            break;
+        case 'os_detection':
+            if (!taskData.ip) {
+                showAlert('Please enter a target IP address', 'warning');
+                return false;
+            }
+            break;
+        case 'dns_audit':
+            if (!taskData.domain) {
+                showAlert('Please enter a domain name', 'warning');
+                return false;
+            }
+            break;
+        case 'vulnerability_scan':
+            if (!taskData.ip) {
+                showAlert('Please enter a target IP address', 'warning');
+                return false;
+            }
+            if (taskData.scan_mode === 'custom' && !taskData.keyword) {
+                showAlert('Please enter a vulnerability keyword for custom scan', 'warning');
+                return false;
+            }
+            break;
+    }
+    return true;
+}
+
+function refreshScheduledJobs() {
+    fetch('/api/get_scheduled_jobs')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayScheduledJobs(data.jobs);
+        } else {
+            showAlert('Failed to load scheduled jobs: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Network error: ' + error.message, 'danger');
+    });
+}
+
+function displayScheduledJobs(jobs) {
+    const container = document.getElementById('scheduledJobsContainer');
+    
+    if (!jobs || jobs.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted py-5">
+                <i class="fas fa-clock fa-3x mb-3"></i>
+                <h5>No scheduled tasks</h5>
+                <p>Schedule your first task to get started.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<div class="table-responsive"><table class="table table-striped">';
+    html += '<thead><tr><th>Task</th><th>Next Run</th><th>Actions</th></tr></thead><tbody>';
+    
+    jobs.forEach(job => {
+        const nextRun = job.next_run_time ? new Date(job.next_run_time).toLocaleString() : 'N/A';
+        html += `
+            <tr>
+                <td><strong>${job.name}</strong></td>
+                <td>${nextRun}</td>
+                <td>
+                    <button class="btn btn-sm btn-danger" onclick="removeScheduledJob('${job.id}')">
+                        <i class="fas fa-trash"></i> Remove
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+}
+
+function removeScheduledJob(jobId) {
+    if (!confirm('Are you sure you want to remove this scheduled task?')) {
+        return;
+    }
+    
+    fetch('/api/remove_scheduled_job', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ job_id: jobId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Task removed successfully', 'success');
+            refreshScheduledJobs();
+        } else {
+            showAlert('Failed to remove task: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Network error: ' + error.message, 'danger');
+    });
+}
+
+function refreshJobResults() {
+    fetch('/api/get_job_results')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayJobResults(data.results);
+        } else {
+            showAlert('Failed to load job results: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Network error: ' + error.message, 'danger');
+    });
+}
+
+function displayJobResults(results) {
+    const container = document.getElementById('jobResultsContainer');
+    
+    if (!results || results.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted py-5">
+                <i class="fas fa-file-alt fa-3x mb-3"></i>
+                <h5>No task results yet</h5>
+                <p>Results will appear here after scheduled tasks complete.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<div class="accordion" id="resultsAccordion">';
+    
+    results.forEach((result, index) => {
+        const timestamp = new Date(result.timestamp.replace(/(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})/, '$1-$2-$3T$4:$5:$6')).toLocaleString();
+        const hasError = result.result && result.result.error;
+        
+        html += `
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading${index}">
+                    <button class="accordion-button ${index > 0 ? 'collapsed' : ''}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}">
+                        <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                            <span>
+                                <i class="fas fa-${hasError ? 'exclamation-triangle text-warning' : 'check-circle text-success'}"></i>
+                                ${result.task_type.replace('_', ' ').toUpperCase()} - ${result.job_id}
+                            </span>
+                            <small class="text-muted">${timestamp}</small>
+                        </div>
+                    </button>
+                </h2>
+                <div id="collapse${index}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" data-bs-parent="#resultsAccordion">
+                    <div class="accordion-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <small class="text-muted">Job ID: ${result.job_id}</small>
+                            <button class="btn btn-sm btn-outline-primary" onclick="downloadResult('${result.job_id}', '${result.task_type}', '${result.timestamp}')">
+                                <i class="fas fa-download"></i> Download PDF
+                            </button>
+                        </div>
+                        <pre class="bg-light p-3 rounded"><code>${JSON.stringify(result.result, null, 2)}</code></pre>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function downloadResult(jobId, taskType, timestamp) {
+    const filename = `job_${jobId}_${taskType}_${timestamp}.pdf`;
+    const link = document.createElement('a');
+    link.href = `/scheduled_results/${filename}`;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Set default schedule time to 1 hour from now
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    now.setHours(now.getHours() + 1);
+    const scheduleTime = now.toISOString().slice(0, 16);
+    document.getElementById('scheduleTime').value = scheduleTime;
+    
+    // Load initial data
+    refreshScheduledJobs();
+    refreshJobResults();
+});
+</script>
+{% endblock %}
