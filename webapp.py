@@ -384,8 +384,8 @@ def api_port_scan():
     ip = data.get('ip')
     ports = data.get('ports')
     try:
-        result, duration = port_scan(ip, ports)
-        return jsonify({'success': True, 'data': result, 'duration': duration})
+        result = port_scan(ip, ports)
+        return jsonify({'success': True, 'data': result})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -434,8 +434,8 @@ def api_vulnerability_scan():
             result, duration = run_auto_vuln_scan(ip)
         else:
             result = run_custom_vuln_scan(ip, keyword)
-            duration = result.get('duration', 0) # Assuming run_custom_vuln_scan returns duration
-        return jsonify({'success': True, 'data': result, 'duration': duration})
+            duration = result.get('duration', 0)
+        return jsonify({'success': True, 'data': result})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 

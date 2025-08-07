@@ -138,8 +138,8 @@ document.getElementById('portScanForm').addEventListener('submit', function(e) {
                 document.getElementById('scanStats').textContent = 'Error';
                 document.getElementById('scanStats').className = 'badge bg-warning';
             } else {
-                displayResults(data.data);
-                document.getElementById('scanStats').textContent = `${data.data.length} ports found`;
+                displayResults(data.data.ports);
+                document.getElementById('scanStats').textContent = `${data.data.ports.length} ports found`;
                 document.getElementById('scanStats').className = 'badge bg-success';
             }
         } else {
@@ -161,7 +161,7 @@ function displayResults(results) {
     const tbody = document.getElementById('resultsTableBody');
     tbody.innerHTML = '';
     
-    if (!results || results.length === 0 || results.error) {
+    if (!results || !Array.isArray(results) || results.length === 0) {
         document.getElementById('noResults').style.display = 'block';
         document.getElementById('resultsContainer').style.display = 'none';
         return;
@@ -187,7 +187,7 @@ function displayResults(results) {
 
 // Download PDF Report
 document.getElementById('downloadPdfBtn').addEventListener('click', function() {
-    if (scanResults.length === 0) {
+    if (!scanResults || !scanResults.ports || scanResults.ports.length === 0) {
         showAlert('No results to download', 'warning');
         return;
     }
@@ -195,7 +195,7 @@ document.getElementById('downloadPdfBtn').addEventListener('click', function() {
     const title = `Port Scan Report - ${currentTarget}`;
     const filename = `port_scan_${currentTarget.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.pdf`;
     
-    downloadReport(scanResults, title, filename);
+    downloadReport(scanResults.ports, title, filename);
 });
 
 // Vulnerability Scan
