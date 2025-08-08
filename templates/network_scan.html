@@ -150,8 +150,8 @@ document.getElementById('networkScanForm').addEventListener('submit', function(e
         
         if (data.success) {
             scanResults = data.data;
-            displayResults(data.data);
-            document.getElementById('scanStats').textContent = `${data.data.length} hosts found`;
+            displayResults(data.data.hosts);
+            document.getElementById('scanStats').textContent = `${data.data.hosts.length} hosts found`;
             document.getElementById('scanStats').className = 'badge bg-success';
         } else {
             showAlert('Scan failed: ' + data.error, 'danger');
@@ -172,7 +172,7 @@ function displayResults(results) {
     const tbody = document.getElementById('resultsTableBody');
     tbody.innerHTML = '';
     
-    if (results.length === 0) {
+    if (!results || !Array.isArray(results) || results.length === 0) {
         document.getElementById('noResults').style.display = 'block';
         document.getElementById('resultsContainer').style.display = 'none';
         return;
@@ -204,7 +204,7 @@ function displayResults(results) {
 
 // Download PDF Report
 document.getElementById('downloadPdfBtn').addEventListener('click', function() {
-    if (scanResults.length === 0) {
+    if (!scanResults || !scanResults.hosts || scanResults.hosts.length === 0) {
         showAlert('No results to download', 'warning');
         return;
     }
@@ -213,12 +213,12 @@ document.getElementById('downloadPdfBtn').addEventListener('click', function() {
     const title = `Network Scan Report - ${subnet}`;
     const filename = `network_scan_${subnet.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.pdf`;
     
-    downloadReport(scanResults, title, filename);
+    downloadReport(scanResults.hosts, title, filename);
 });
 
 // Export JSON
 document.getElementById('exportJsonBtn').addEventListener('click', function() {
-    if (scanResults.length === 0) {
+    if (!scanResults || !scanResults.hosts || scanResults.hosts.length === 0) {
         showAlert('No results to export', 'warning');
         return;
     }
