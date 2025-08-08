@@ -149,7 +149,7 @@ document.getElementById('networkScanForm').addEventListener('submit', function(e
         hideLoading();
         
         if (data.success) {
-            scanResults = data.data;
+            scanResults = data.hosts;
             displayResults(data.data.hosts);
             document.getElementById('scanStats').textContent = `${data.data.hosts.length} hosts found`;
             document.getElementById('scanStats').className = 'badge bg-success';
