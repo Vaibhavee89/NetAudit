@@ -1,6 +1,6 @@
 # NetAudit - Network Auditing Web Application
 
-A comprehensive network auditing and security assessment tool built with Flask. This web application provides all the functionality of the original Streamlit app in a modern, responsive web interface.
+A comprehensive network auditing and security assessment tool built with Flask. 
 
 ![NetAudit Logo](https://img.shields.io/badge/NetAudit-Network%20Auditing%20Tool-blue)
 ![Python](https://img.shields.io/badge/Python-3.7+-green)
