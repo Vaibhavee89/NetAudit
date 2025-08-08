@@ -25,4 +25,6 @@ report_*.json
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
 
-# Other
+# Ignore all JSON and PDF files
+*.json
+*.pdf
