@@ -2,6 +2,9 @@ python-nmap
 psutil
 dnspython
 fpdf
+Flask
+Werkzeug
+pandas
 Flask-SQLAlchemy
 APScheduler
 python-dateutil

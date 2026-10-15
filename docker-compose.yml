@@ -4,7 +4,7 @@ services:
   netaudit:
     build:
       context: .
-      dockerfile: Dockerfile_production
+      dockerfile: Dockerfile
     container_name: netaudit-webapp
     ports:
       - "5000:5000"
@@ -14,11 +14,9 @@ services:
     environment:
       - FLASK_ENV=production
       - PYTHONUNBUFFERED=1
-    network_mode: host  # Required for network scanning
     cap_add:
       - NET_ADMIN
       - NET_RAW
-    privileged: true  # Required for packet capture
     restart: unless-stopped
     
   # Optional: Add nginx reverse proxy for production

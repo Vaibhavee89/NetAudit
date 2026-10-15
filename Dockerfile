@@ -14,9 +14,9 @@ RUN apt-get update && \
 WORKDIR /app
 
 # Install dependencies
-COPY requirements_webapp.txt .
+COPY requirements.txt .
 RUN pip install --upgrade pip
-RUN pip install -r requirements_webapp.txt
+RUN pip install -r requirements.txt
 
 # Copy all files
 COPY . .
