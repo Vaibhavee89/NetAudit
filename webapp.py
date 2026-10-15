@@ -29,7 +29,7 @@ app.secret_key = 'your-secret-key-change-this'  # Change this in production
 def scan_network(subnet):
     start_time = time.time()
     scanner = nmap.PortScanner()
-    scanner.scan(hosts=subnet, arguments='-sn')
+    scanner.scan(hosts=subnet, arguments='-sn -n')
     live_hosts = []
     for host in scanner.all_hosts():
         mac = scanner[host]['addresses'].get('mac', "N/A")

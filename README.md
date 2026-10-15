@@ -126,6 +126,15 @@ Once running, access the web application at:
 - **Local**: http://localhost:5000
 - **Network**: http://[your-ip]:5000
 
+### Why Docker Is Not Supported
+NetAudit runs directly on your machine, not in a container. Network scans
+(ping sweeps, port scans, OS detection, packet capture) need to see your real
+LAN. On macOS and Windows, Docker runs containers inside a virtual machine
+with its own network, so they cannot see your devices: every address appears
+as "up" with no MAC address. Linux host networking would fix this, but the
+project does not ship a Docker setup for it. Install and run it natively
+as described above.
+
 ## 📖 Usage Guide
 
 ### Getting Started
@@ -295,6 +304,10 @@ python test_database.py
 #### Port Scan Takes Too Long
 **Problem**: Port scans are very slow
 **Solution**: Reduce scan range or adjust timing parameters
+
+#### Network Scan Fails With "Failed to fetch"
+**Problem**: The Network Scan page shows "Network error: Failed to fetch" and never returns results
+**Solution**: The scan is taking too long, usually because nmap is doing reverse-DNS lookups for every address. The app runs `nmap -sn -n` to avoid this. Make sure you have the latest `webapp.py`, and check the server logs for errors.
 
 #### Scheduler Database Errors
 **Problem**: "Database not found" or scheduler initialization fails
