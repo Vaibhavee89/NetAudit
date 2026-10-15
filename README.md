@@ -7,6 +7,8 @@ A comprehensive network auditing and security assessment tool built with Flask.
 ![Flask](https://img.shields.io/badge/Flask-2.3+-red)
 ![License](https://img.shields.io/badge/License-Educational%20Use-yellow)
 
+![NetAudit dashboard](docs/images/dashboard.png)
+
 ## 🚀 Features
 
 ### Network Discovery & Analysis
