@@ -30,7 +30,7 @@ sudo chown -R netaudit:netaudit /home/netaudit/netaudit-app/
 # Create virtual environment
 echo "🐍 Setting up Python environment..."
 sudo -u netaudit python3 -m venv venv
-sudo -u netaudit /home/netaudit/netaudit-app/venv/bin/pip install -r requirements_webapp.txt
+sudo -u netaudit /home/netaudit/netaudit-app/venv/bin/pip install -r requirements.txt
 
 # Create systemd service
 echo "⚙️  Creating systemd service..."

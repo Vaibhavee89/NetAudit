@@ -28,9 +28,7 @@ def create_portable_package():
     files_to_copy = [
         'webapp.py',
         'run_webapp.py', 
-        'requirements_webapp.txt',
-        'README_webapp.md',
-        'vuln_db.json'
+        'requirements.txt'
     ]
     
     dirs_to_copy = [
@@ -101,7 +99,7 @@ echo Activating virtual environment...
 call venv\\Scripts\\activate.bat
 
 echo Installing/updating requirements...
-pip install -r requirements_webapp.txt
+pip install -r requirements.txt
 
 echo Starting NetAudit...
 python run_webapp.py
@@ -142,7 +140,7 @@ echo "Activating virtual environment..."
 source venv/bin/activate
 
 echo "Installing/updating requirements..."
-pip install -r requirements_webapp.txt
+pip install -r requirements.txt
 
 echo "Starting NetAudit..."
 python run_webapp.py
@@ -168,7 +166,7 @@ def install_requirements():
     try:
         subprocess.check_call([
             sys.executable, "-m", "pip", "install", 
-            "-r", "requirements_webapp.txt"
+            "-r", "requirements.txt"
         ])
         print("✅ Requirements installed successfully!")
         return True
@@ -186,7 +184,7 @@ def main():
     else:
         print("\\n❌ Installation failed")
         print("Please install requirements manually:")
-        print("pip install -r requirements_webapp.txt")
+        print("pip install -r requirements.txt")
 
 if __name__ == "__main__":
     main()

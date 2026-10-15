@@ -360,7 +360,7 @@ NetAudit/
 ### Development Setup
 1. Fork the repository
 2. Create a development branch
-3. Install dependencies: `pip install -r requirements_webapp.txt`
+3. Install dependencies: `pip install -r requirements.txt`
 4. Make your changes
 5. Test thoroughly
 6. Submit a pull request

@@ -39,22 +39,27 @@ def check_nmap():
 
 def check_dependencies():
     """Check if required Python packages are installed."""
+    # (pip package name, module name it is imported as)
     required_packages = [
-        'flask', 'python-nmap', 'psutil', 'dnspython', 
-        'fpdf', 'pandas', 'networkx', 'pyvis', 'scapy'
+        ('python-nmap', 'nmap'), ('psutil', 'psutil'), ('dnspython', 'dns'),
+        ('fpdf', 'fpdf'), ('Flask', 'flask'), ('Werkzeug', 'werkzeug'),
+        ('pandas', 'pandas'), ('Flask-SQLAlchemy', 'flask_sqlalchemy'),
+        ('APScheduler', 'apscheduler'), ('python-dateutil', 'dateutil'),
+        ('SQLAlchemy', 'sqlalchemy'), ('networkx', 'networkx'),
+        ('pyvis', 'pyvis'), ('scapy', 'scapy')
     ]
     
     missing_packages = []
     
-    for package in required_packages:
+    for package, module in required_packages:
         try:
-            __import__(package.replace('-', '_'))
+            __import__(module)
         except ImportError:
             missing_packages.append(package)
     
     if missing_packages:
         print(f"❌ Missing packages: {', '.join(missing_packages)}")
-        print("   Please install with: pip install -r requirements_webapp.txt")
+        print("   Please install with: pip install -r requirements.txt")
         return False
     
     print("✅ All required packages are installed")
