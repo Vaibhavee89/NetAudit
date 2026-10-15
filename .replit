@@ -1,12 +1,12 @@
 modules = ["web", "python-3.12", "nodejs-20", "bash", "nix"]
-run = "streamlit run app.py"
+run = "python3 webapp.py"
 
 [nix]
 channel = "stable-25_05"
 packages = ["cacert", "glibcLocales", "imagemagickBig", "nmap", "sox", "tcpdump", "wireshark"]
 
 [deployment]
-run = ["sh", "-c", "streamlit run app.py"]
+run = ["sh", "-c", "python3 webapp.py"]
 
 [[ports]]
 localPort = 5000

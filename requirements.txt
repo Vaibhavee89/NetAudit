@@ -2,8 +2,10 @@ python-nmap
 psutil
 dnspython
 fpdf
-streamlit
 Flask-SQLAlchemy
 APScheduler
 python-dateutil
 SQLAlchemy
+networkx
+pyvis
+scapy

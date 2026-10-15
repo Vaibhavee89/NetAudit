@@ -59,7 +59,7 @@ A comprehensive network auditing and security assessment tool built with Flask.
 ```bash
 # If using git
 git clone <repository-url>
-cd Streamlit-NetworkAuditing
+cd NetAudit
 
 # Or download and extract the ZIP file
 ```
@@ -316,7 +316,7 @@ python test_database.py
 ## 📁 Project Structure
 
 ```
-Streamlit-NetworkAuditing/
+NetAudit/
 ├── webapp.py                 # Main Flask application
 ├── scheduler.py              # Task scheduling system
 ├── requirements.txt          # Python dependencies

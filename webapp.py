@@ -23,7 +23,7 @@ app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this'  # Change this in production
 
 # ========================
-# Utility Functions (from Streamlit app)
+# Utility Functions
 # ========================
 
 def scan_network(subnet):

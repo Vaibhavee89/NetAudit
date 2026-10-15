@@ -14,12 +14,13 @@ RUN apt-get update && \
 WORKDIR /app
 
 # Install dependencies
-COPY requirements.txt .
+COPY requirements_webapp.txt .
 RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+RUN pip install -r requirements_webapp.txt
 
 # Copy all files
 COPY . .
 
-# Run Streamlit
-CMD streamlit run app.py --server.port=${PORT} --server.enableCORS=false
+# Run the Flask web application
+EXPOSE 5000
+CMD ["python", "webapp.py"]
