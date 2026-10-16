@@ -9,6 +9,36 @@ A comprehensive network auditing and security assessment tool built with Flask.
 
 ![NetAudit dashboard](docs/images/dashboard.png)
 
+## ⚡ Quick Start (No Command Line Needed)
+
+You don't need to type any commands. Use the launcher for your system:
+
+**macOS**
+1. Download or clone this project.
+2. Double-click **`NetAudit.command`**.
+3. The first time, if macOS says the file can't be opened, right-click it and choose **Open**, then **Open** again.
+
+**Windows**
+1. Download or clone this project.
+2. Double-click **`NetAudit.bat`**.
+3. If Windows shows a security prompt, choose **More info** then **Run anyway**.
+
+The launcher then:
+- Checks for Python 3 and installs Nmap if it's missing (on macOS with Homebrew, or on Windows with winget)
+- Sets up the required Python packages (first run only, a few minutes)
+- Starts NetAudit and opens it in your browser at http://localhost:5000
+
+Keep the launcher window open while you use NetAudit. Close it to stop the app.
+
+**Before you start, install these if the launcher asks you to:**
+- **Python 3**: https://www.python.org/downloads/ (Windows: tick "Add python.exe to PATH")
+- **Nmap**: https://nmap.org/download.html
+- **Windows only**: Nmap's installer offers to install **Npcap**. Keep that option ticked, as some scans need it.
+
+**Administrator rights:** Some features, such as OS detection and packet capture, need administrator rights. The launcher doesn't request them. NetAudit shows a warning when it isn't running with them.
+
+> Only scan networks you own or have written permission to test.
+
 ## 🚀 Features
 
 ### Network Discovery & Analysis
